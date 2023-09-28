@@ -29,6 +29,9 @@ struct Particle{
     double a = 9.81;
     double p = 0;
 };
+
+
+
 double distance_squared(Particle p1, Particle p2){
     double dx = p1.px - p2.px;
     double dy = p1.py - p2.py;
@@ -64,7 +67,6 @@ int main(int argc, char** argv) {
     for (int i = 0; i < np; ++i) {
         Particle particle;
         file.read(reinterpret_cast<char*>(&particle), sizeof(Particle));
-
         particles.push_back(particle);
     }
 
@@ -90,20 +92,33 @@ int main(int argc, char** argv) {
     double time_step = 0.001;
     int particle_num = 2;
 
-    double mass = p*pow(ppm,3);
+    double m = p*pow(ppm,3);
     double h = r/ppm;
 
 
     //Parte del grid creation
 
-    int b_min[3] = {1,2,3};
-    int b_max[3] = {4,5,6};
-    int boxx = b_max[0] - b_min[0];
-    int boxy = b_max[1] - b_min[1];
-    int boxz = b_max[2] - b_min[2];
+    double b_min[3] = {-0.065,0.08,-0.065};
+    double b_max[3] = {0.065,0.1,0.065};
+    double boxx = b_max[0] - b_min[0];
+    double boxy = b_max[1] - b_min[1];
+    double boxz = b_max[2] - b_min[2];
+    m = p/pow(ppm,3);
+    h = r/ppm;
 
 
+    int nx = floor(boxx/h);
+    int ny = floor(boxy/h);
+    int nz = floor(boxz/h);
+    double sx = boxx/h;
+    double sy = boxy/h;
+    double sz = boxz/h;
+    int NumberofBlocks = nx*ny*nz;
+    //Placing particles in blocks
+    for
+    for (int i = 0; i<= np; i++){
 
+    }
 
     //Density computation
     double d;
@@ -112,7 +127,7 @@ int main(int argc, char** argv) {
     double density_inc;
     double acceleration_inc;
     double density_constant_transformation_part = 64*M_PI*pow(h,9);
-    double densityConstantTransformation =  315 * mass / density_constant_transformation_part;
+    double densityConstantTransformation =  315 * m / density_constant_transformation_part;
 
     for (auto i = particles.begin();i !=particles.end(); i++){
         for (auto j = i++;j != particles.end(); j++){
@@ -129,9 +144,9 @@ int main(int argc, char** argv) {
                 //Acceleration
                 //Local to each iteration
                 //Check formula later
-                i->hvx = i->hvx + ((i->px-j->px)*15*mass*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vx-j->vx)*nu*mass)/(M_PI*pow(h,6)*i->p*j->p);
-                i->hvy = i->hvy + ((i->py-j->py)*15*mass*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vy-j->vy)*nu*mass)/(M_PI*pow(h,6)*i->p*j->p);
-                i->hvz = i->hvz + ((i->pz-j->pz)*15*mass*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vz-j->vz)*nu*mass)/(M_PI*pow(h,6)*i->p*j->p);
+                i->hvx = i->hvx + ((i->px-j->px)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vx-j->vx)*nu*m)/(M_PI*pow(h,6)*i->p*j->p);
+                i->hvy = i->hvy + ((i->py-j->py)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vy-j->vy)*nu*m)/(M_PI*pow(h,6)*i->p*j->p);
+                i->hvz = i->hvz + ((i->pz-j->pz)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vz-j->vz)*nu*m)/(M_PI*pow(h,6)*i->p*j->p);
             }
         }
     }
