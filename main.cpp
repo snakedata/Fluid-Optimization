@@ -94,6 +94,9 @@ int main(int argc, char** argv) {
         return num_block;
     }
     */
+    /*Esta función va a ser para, cuando queramos acceder a un bloque al principio, para meter las partículas
+    que le corresponden a cada bloque según su posición, y cuando querramos acceder a ese bloque desde el grid,
+        cuyas posiciones están organizadas de esta manera*/
    for (int i = 0; i < np; ++i) {
         Particle particle;
         file.read(reinterpret_cast<char*>(&px), sizeof(float));
