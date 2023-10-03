@@ -81,7 +81,19 @@ int main(int argc, char** argv) {
 
     // Create a vector to store particles
     std::vector<Particle> particles;
-
+    /*Introducir en cada bloque las partículas que le corresponden(en proceso)
+    vector<double> min_coord = {-0.6,-0.3,-0.2}
+    vector<double> coord = {5.67,6.87,3.4};
+    vector<int> grid_size = {nx,ny,nz};
+    vector<int> block_size = {sx,sy,sz}
+    int find_block(vector<double> coord,vector<int> grid_size,vector<int> block_size,vector<double> min_coord){
+        int block_x = x - min_coord[0]/block_size[0];
+        int block_y = y - min_coord[1]/block_size[1];
+        int block_z = z - min_coord[2]/block_size[2];
+        int num_block = block_z + block_y*grid_size[2] + block_x*grid_size[2]*grid_size[1];
+        return num_block;
+    }
+    */
    for (int i = 0; i < np; ++i) {
         Particle particle;
         file.read(reinterpret_cast<char*>(&px), sizeof(float));
