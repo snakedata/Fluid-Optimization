@@ -53,6 +53,15 @@ int main(int argc, char** argv) {
 
     float ppm_double;
     int np;
+    float px;
+    float py;
+    float pz;
+    float hvx;
+    float hvy;
+    float hvz;
+    float vx;
+    float vy;
+    float vz;
 
     //Parte de lectura de Juan crear todas las particulas
     ifstream file("/Users/raulpineda/iCloud Drive (Archive)/Document/Arquitectura/Lab1/small.fld", ios::binary);
