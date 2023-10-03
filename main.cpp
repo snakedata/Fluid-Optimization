@@ -73,11 +73,28 @@ int main(int argc, char** argv) {
     // Create a vector to store particles
     std::vector<Particle> particles;
 
-    for (int i = 0; i < np; ++i) {
+   for (int i = 0; i < np; ++i) {
         Particle particle;
-        file.read(reinterpret_cast<char*>(&particle), sizeof(Particle));
+        file.read(reinterpret_cast<char*>(&px), sizeof(float));
+        file.read(reinterpret_cast<char*>(&py), sizeof(float));
+        file.read(reinterpret_cast<char*>(&pz), sizeof(float));
+        file.read(reinterpret_cast<char*>(&hvx), sizeof(float));
+        file.read(reinterpret_cast<char*>(&hvy), sizeof(float));
+        file.read(reinterpret_cast<char*>(&hvz), sizeof(float));
+        file.read(reinterpret_cast<char*>(&vx), sizeof(float));
+        file.read(reinterpret_cast<char*>(&vy), sizeof(float));
+        file.read(reinterpret_cast<char*>(&vz), sizeof(float));
+        particle.px = px;
+        particle.py = px;
+        particle.pz = px;
+        particle.hvx = px;
+        particle.hvy = px;
+        particle.hvz = px;
+        particle.vx = px;
+        particle.vy = px;
+        particle.vz = px;
         particles.push_back(particle);
-    }
+   }
     double ppm = static_cast<float>(ppm_double);
     file.close();
     //int counter;
