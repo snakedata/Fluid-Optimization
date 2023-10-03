@@ -2,6 +2,7 @@
 -Cambiar la estructura de Bloque
 -Normalizacion de la funcion que asigna al bloque sus particulas
 -Crear un archivo con particulas aun más pequeño para ver si vamos bien
+-Convertir valores numéricos de las partículas de float a double
 
 
 
