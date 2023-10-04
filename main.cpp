@@ -60,12 +60,24 @@ double distance_squared(Particle p1, Particle p2){
 
 int find_block(Particle particle,vector<int> blockNumber,vector<double> block_size,vector<double> min_coord){
     int block_x = floor((particle.px - min_coord[0])/block_size[0]);
-    cout << "This is the normalized distance x" << particle.px -min_coord[0];
-    cout << "This is the normalized distance y" << particle.py -min_coord[1];
     int block_y = floor((particle.py - min_coord[1])/block_size[1]);
     int block_z = floor((particle.pz - min_coord[2])/block_size[2]);
+    if (block_x < 0){
+        block_x = 0;
+    } else if (block_x > blockNumber[0]) {
+        block_x = blockNumber[0]-1;
+    }if (block_y < 0){
+        block_y = 0;
+    } else if (block_y > blockNumber[1]) {
+        block_y = blockNumber[1]-1;
+    }if (block_z < 0){
+        block_z = 0;
+    } else if (block_z > blockNumber[2]) {
+        block_z = blockNumber[2]-1;
+    }
+
+
     cout << "This is the x block " << block_x << ", y block " << block_y << ", z block " << block_z;
-    //For every y there are nz number of z blocks and for every x there are ny * nz number of blocks
     int num_block = block_z + block_y*blockNumber[2] + block_x*blockNumber[2]*blockNumber[1];
     return num_block;
 }
@@ -100,8 +112,8 @@ int main(int argc, char** argv) {
 
     //Constants for grid creation
     //Remove normalization
-    vector<double> bmax = {0.065, 0.1, 0.065};
-    vector<double> bmin = {-0.065, -0.08, -0.065};
+    vector<double> bmax = {0.08, 0.1, 0.08};
+    vector<double> bmin = {-0.08, -0.09, -0.08};
 
 
 
@@ -177,9 +189,9 @@ int main(int argc, char** argv) {
     int nz = floor(boxz/h);
     cout << "\n r: " << r << " ppm: " << ppm;
 
-    double sx = boxx/h;
-    double sy = boxy/h;
-    double sz = boxz/h;
+    double sx = boxx/nx;
+    double sy = boxy/ny;
+    double sz = boxz/nz;
     cout << "\n sx: " << sx << " sy " << sy << " sz " << sz;
     int NumberofBlocks = (nx-1)*(ny-1)*(nz-1);
 
@@ -223,7 +235,7 @@ int main(int argc, char** argv) {
         blockNumber =  find_block(*particle,blockAmmount,blockSize,bmin);
         cout << "\nThis is particle number: " << counter <<  "Block number" << blockNumber;
         counter +=1;
-        
+        //For every y there are nz number of z blocks and for every x there are ny * nz number of blocks
 
         grid[blockNumber].particles.push_back(*particle);
     }
