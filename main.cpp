@@ -19,6 +19,8 @@ using namespace std;
 
 //Vector of blocks where each block is a list or vector of particles
 
+
+
 struct Particle{
     double px;
     double py;
@@ -32,6 +34,8 @@ struct Particle{
     double a = 9.81;
     double p = 0;
 };
+
+
 struct Block{
     int x;
     int y;
@@ -49,10 +53,28 @@ double distance_squared(Particle p1, Particle p2){
     return dx * dx + dy * dy + dz * dz;
 };
 
+/*Introducir en cada bloque las partículas que le corresponden(en proceso)
+ Esta función va a ser para, cuando queramos acceder a un bloque al principio, para meter las partículas
+ que le corresponden a cada bloque según su posición, y cuando querramos acceder a ese bloque desde el grid,
+     cuyas posiciones están organizadas de esta manera*/
+
+int find_block(Particle particle,vector<int> blockNumber,vector<double> block_size,vector<double> min_coord){
+    int block_x = floor((particle.px - min_coord[0])/block_size[0]);
+    cout << "This is the normalized distance x" << particle.px -min_coord[0];
+    cout << "This is the normalized distance y" << particle.py -min_coord[1];
+    int block_y = floor((particle.py - min_coord[1])/block_size[1]);
+    int block_z = floor((particle.pz - min_coord[2])/block_size[2]);
+    cout << "This is the x block " << block_x << ", y block " << block_y << ", z block " << block_z;
+    //For every y there are nz number of z blocks and for every x there are ny * nz number of blocks
+    int num_block = block_z + block_y*blockNumber[2] + block_x*blockNumber[2]*blockNumber[1];
+    return num_block;
+}
+
 int main(int argc, char** argv) {
 
-    float ppm_double;
+    float ppm_float;
     int np;
+
     float px;
     float py;
     float pz;
@@ -62,6 +84,26 @@ int main(int argc, char** argv) {
     float vx;
     float vy;
     float vz;
+    //Contsants intialization
+    double r = 1.695;
+    double p = 1000;
+    double ps = 3.0;
+    double sc = 30000;
+    double dv = 128.0;
+    double nu = 0.4;
+    double dp = 0.0002;
+    double time_step = 0.001;
+    int particle_num = 2;
+
+
+
+
+    //Constants for grid creation
+    //Remove normalization
+    vector<double> bmax = {0.065, 0.1, 0.065};
+    vector<double> bmin = {-0.065, -0.08, -0.065};
+
+
 
     //Parte de lectura de Juan crear todas las particulas
     ifstream file("/Users/raulpineda/iCloud Drive (Archive)/Document/Arquitectura/Lab1/small.fld", ios::binary);
@@ -74,30 +116,18 @@ int main(int argc, char** argv) {
     // Read ppm and np
 
     //cap 10-11
-    file.read(reinterpret_cast<char*>(&ppm_double), sizeof(float));
+    file.read(reinterpret_cast<char*>(&ppm_float), sizeof(float));
     file.read(reinterpret_cast<char*>(&np), sizeof(int));
+    double ppm = static_cast<float>(ppm_float);
+    double m = p*pow(ppm,3);
+    double h = r/ppm;
 
-    std::cout << "ppm: " << ppm_double << ", np: " << np << std::endl;
+    std::cout << "ppm: " << ppm_float << ", np: " << np << std::endl;
 
     // Create a vector to store particles
     std::vector<Particle> particles;
-    /*Introducir en cada bloque las partículas que le corresponden(en proceso)
-    vector<double> min_coord = {-0.6,-0.3,-0.2}
-    vector<double> coord = {5.67,6.87,3.4};
-    vector<int> grid_size = {nx,ny,nz};
-    vector<int> block_size = {sx,sy,sz}
-    int find_block(vector<double> coord,vector<int> grid_size,vector<int> block_size,vector<double> min_coord){
-        int block_x = x - min_coord[0]/block_size[0];
-        int block_y = y - min_coord[1]/block_size[1];
-        int block_z = z - min_coord[2]/block_size[2];
-        int num_block = block_z + block_y*grid_size[2] + block_x*grid_size[2]*grid_size[1];
-        return num_block;
-    }
-    */
-    /*Esta función va a ser para, cuando queramos acceder a un bloque al principio, para meter las partículas
-    que le corresponden a cada bloque según su posición, y cuando querramos acceder a ese bloque desde el grid,
-        cuyas posiciones están organizadas de esta manera*/
-   for (int i = 0; i < np; ++i) {
+
+    for (int i = 0; i < np; ++i) {
         Particle particle;
         file.read(reinterpret_cast<char*>(&px), sizeof(float));
         file.read(reinterpret_cast<char*>(&py), sizeof(float));
@@ -108,51 +138,34 @@ int main(int argc, char** argv) {
         file.read(reinterpret_cast<char*>(&vx), sizeof(float));
         file.read(reinterpret_cast<char*>(&vy), sizeof(float));
         file.read(reinterpret_cast<char*>(&vz), sizeof(float));
-        particle.px = px;
-        particle.py = px;
-        particle.pz = px;
-        particle.hvx = px;
-        particle.hvy = px;
-        particle.hvz = px;
-        particle.vx = px;
-        particle.vy = px;
-        particle.vz = px;
+
+
+        particle.px = static_cast<double>(trunc(px));
+        particle.py = static_cast<double>(py);
+        particle.pz = static_cast<double>(pz);
+        particle.hvx = static_cast<double>(hvx);
+        particle.hvy = static_cast<double>(hvy);
+        particle.hvz = static_cast<double>(hvz);
+        particle.vx = static_cast<double>(vx);
+        particle.vy = static_cast<double>(vy);
+        particle.vz = static_cast<double>(vz);
         particles.push_back(particle);
-   }
-    double ppm = static_cast<float>(ppm_double);
+    }
+
     file.close();
-    //int counter;
-    // Access particles
-    //for (const Particle& particle : particles) {
-    //    std::cout << "Particle Data:" << counter  << std::endl;
-    //    std::cout << "px: " << particle.px << ", py: " << particle.py << ", pz: " << particle.pz << std::endl;
-    //    std::cout << "hvx: " << particle.hvx << ", hvy: " << particle.hvy << ", hvz: " << particle.hvz << std::endl;
-    //    std::cout << "vx: " << particle.vx << ", vy: " << particle.vy << ", vz: " << particle.vz << std::endl;
-    //    counter +=1;
-    //}
+    int counter;
+    //Access particles
+    /*for (const Particle& particle : particles) {
+        std::cout << "Particle Data:" << counter  << std::endl;
+        std::cout << "px: " << particle.px << ", py: " << particle.py << ", pz: " << particle.pz << std::endl;
+        std::cout << "hvx: " << particle.hvx << ", hvy: " << particle.hvy << ", hvz: " << particle.hvz << std::endl;
+        std::cout << "vx: " << particle.vx << ", vy: " << particle.vy << ", vz: " << particle.vz << std::endl;
+        counter +=1;
+    }*/
 
-    //Contsants intialization
-    double r = 1.695;
-    double p = 1000;
-    double ps = 3.0;
-    double sc = 30000;
-    double dv = 128.0;
-    double nu = 0.4;
-    double dp = 0.0002;
-    double time_step = 0.001;
-    int particle_num = 2;
-
-    double m = p*pow(ppm,3);
-    double h = r/ppm;
-
-
-    //Parte del grid creation
-
-    double b_min[3] = {-0.065,-0.08,-0.065};
-    double b_max[3] = {0.065,0.1,0.065};
-    double boxx = b_max[0] - b_min[0];
-    double boxy = b_max[1] - b_min[1];
-    double boxz = b_max[2] - b_min[2];
+    double boxx = bmax[0] - bmin[0];
+    double boxy = bmax[1] - bmin[1];
+    double boxz = bmax[2] - bmin[2];
 
     m = p/pow(ppm,3);
     h = r/ppm;
@@ -163,9 +176,11 @@ int main(int argc, char** argv) {
     int ny = floor(boxy/h);
     int nz = floor(boxz/h);
     cout << "\n r: " << r << " ppm: " << ppm;
+
     double sx = boxx/h;
     double sy = boxy/h;
     double sz = boxz/h;
+    cout << "\n sx: " << sx << " sy " << sy << " sz " << sz;
     int NumberofBlocks = (nx-1)*(ny-1)*(nz-1);
 
 
@@ -183,36 +198,35 @@ int main(int argc, char** argv) {
         for (int y = 0; y < ny-1; y++){
             for (int z = 0; z < nz-1; z++){
                 counterBlock+=1;
-                cout << "\nThis is block:" <<  counterBlock << " x value: " << x << " y value: " << y << " z value: " << z;
                 Block block;
                 block.x = x;
                 block.y = y;
                 block.z = z;
-                cout << 1;
                 grid.push_back(block);
-                cout << 0;
+
             }
         }
     }
+
+
     //Grid organization
     cout << "\n Grid organization";
     int blockPositionx;
     int blockPositiony;
     int blockPositionz;
+
+    vector<int> blockAmmount = {nx,ny,nz};
+    vector<double> blockSize = {sx,sy,sz};
     int blockNumber;
-    int counter = 0;
-    for (auto particle = particles.begin();particle!=particles.end();particle++){
-        blockPositionx = floor(particle->px/sx);
-        blockPositiony = floor(particle->py/sy);
-        blockPositionz = floor(particle->pz/sz);
-        blockNumber = blockPositionx*blockPositiony + blockPositiony*blockPositionz + blockPositionz;
-        cout << "This is particle number: " << counter << " px " << blockPositionx << " py " << blockPositiony << " pz " << blockPositionz << " Block number" << blockNumber;
+    counter = 0;
+    for (auto particle = particles.begin(); particle != particles.end(); particle++){
+        blockNumber =  find_block(*particle,blockAmmount,blockSize,bmin);
+        cout << "\nThis is particle number: " << counter <<  "Block number" << blockNumber;
         counter +=1;
-        //For every y there are nz number of z blocks and for every x there are ny * nz number of blocks
+        
 
         grid[blockNumber].particles.push_back(*particle);
     }
-
 
 
 
@@ -253,10 +267,7 @@ int main(int argc, char** argv) {
 //Collisions
 
 
-
 //Write floats use standard conversion static cast or narrow cast
-
-
 
 
 }
