@@ -1,8 +1,8 @@
-------------------------------TAREAS------------------------------------
+--------------------------------TAREAS-------------------------------------
 -Cambiar la estructura de Bloque
 -Normalizacion de la funcion que asigna al bloque sus particulas
--Crear un archivo con particulas aun más pequeño para ver si vamos bien
--Convertir valores numéricos de las partículas de float a double
+✓Crear un archivo con particulas aun más pequeño para ver si vamos bien
+✓Convertir valores numéricos de las partículas de float a double
 
 
 
@@ -10,7 +10,7 @@
 
 
 
-----------------------------OPTIMIZACIONES--------------------------------------
+----------------------------OPTIMIZACIONES---------------------------------
 
 LISTA DE POSIBLES OPTIMIZACIONES
 -Agregaar las particulas al vector al mismo tiempo que las leemos
@@ -26,3 +26,9 @@ LISTA DE IDEAS PERO SIN CINFIRMAR
 
 
 LISTA DE OPTIMIZACIONES CONFIRMADAS
+
+
+--------------------------------PROBLEMAS------------------------------------
+
+Hay algunas particulas que ya estan fueran de la caja con las posiciones por ejemplo: Particula uno py = -0.08026, bmin_y = -0.08
+
