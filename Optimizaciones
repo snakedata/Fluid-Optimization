@@ -1,14 +1,6 @@
 --------------------------------TAREAS-------------------------------------
 -Cambiar la estructura de Bloque
--Normalizacion de la funcion que asigna al bloque sus particulas
-✓Crear un archivo con particulas aun más pequeño para ver si vamos bien
-✓Convertir valores numéricos de las partículas de float a double
-
-hola juanillo
-
-hola bb cc
-cc
-
+-Densities arreglar y tambien hacer collisions
 
 ----------------------------OPTIMIZACIONES---------------------------------
 
@@ -30,5 +22,5 @@ LISTA DE OPTIMIZACIONES CONFIRMADAS
 
 --------------------------------PROBLEMAS------------------------------------
 
-Hay algunas particulas que ya estan fueran de la caja con las posiciones por ejemplo: Particula uno py = -0.08026, bmin_y = -0.08
+-No sabemos si las particulas se estan añadiendo bien a los bloques.
 
