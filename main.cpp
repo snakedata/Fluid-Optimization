@@ -43,6 +43,25 @@ struct Block{
     vector<Particle> particles;
 };
 
+int particles_statistics(vector<Block> grid){
+    int maximum = 0;
+    int minimum = 0;
+    int particles_num;
+    int average= 0 ;
+    for (auto & i : grid){
+        particles_num = i.particles.size();
+        if (particles_num > maximum){
+            maximum = particles_num;
+        }else if(particles_num < minimum){
+            minimum = particles_num;
+        }
+        average += particles_num;
+    }
+    int block_number = grid.size();
+    average = average/block_number;
+    cout << "\nThe average number of particles is: " << average << "\nThe maximum is: " << maximum << "\n The minimum is: " << minimum;
+}
+
 
 
 double distance_squared(Particle p1, Particle p2){
