@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -103,6 +104,11 @@ double distance_squared(Particle p1, Particle p2){
     return dx * dx + dy * dy + dz * dz;
 };
 
+
+///FUNCTIONS FOR SIMULATION
+
+
+
 /*Introducir en cada bloque las partículas que le corresponden(en proceso)
  Esta función va a ser para, cuando queramos acceder a un bloque al principio, para meter las partículas
  que le corresponden a cada bloque según su posición, y cuando querramos acceder a ese bloque desde el grid,
@@ -125,25 +131,40 @@ int find_block(Particle particle,GridSize gridSize){
     } else if (block_z >= gridSize.nz) {
         block_z = gridSize.nz-1;
     }
-    cout << "This is the x block " << block_x << ", y block " << block_y << ", z block " << block_z;
+     //cout << "This is the x block " << block_x << ", y block " << block_y << ", z block " << block_z;
     int num_block = block_z + block_y*gridSize.nz + block_x*gridSize.nz*gridSize.ny;
     return num_block;
 }
 
 
+void AllBlocksArrayCreatiom(vector<Particle> &particles,GridSize gridSize){
+vector<vector<int>> all_blocks
+for (int x = 0; x < (gridSize.nx-1)*(gridSize.ny-1)*(gridSize.nz-1); x++){
+vector <int> new_vector;
+all_blocks.push_back(new_vector);
+}
+int insertion_block =0;
+for (int i = 0; i < particles.size(); i++){
+    insertion_block = find_block(particles[i],xxxxxx);
+    all_blocks[insertion_block].push_back(particles.at(i));
+}
+}
+
 ///FUNCTIONS FOR SIMULATION
 
 
-void reposition_particles(std::vector<Particle> &particles, vector<vector<Particle>> &grid){
+void reposition_particles(std::vector<Particle> &particles, vector<vector<Particle>> &all_blocks){
     for (int i = 0; i < particles.size(); i++){
         
     }
 }
 
 
-void simulate(int nsteps, std::vector<Particle> &particles, vector<vector<Particle>> &grid){
+void simulate(int nsteps, std::vector<Particle> &particles, vector<vector<Particle>> &all_blocks){
 
 }
+
+
 
 
 ///------------------------
@@ -244,10 +265,6 @@ int main(int argc, char** argv) {
 
     //cout << "\nnx " << nx << " ny " << ny << " nz " << nz << " Number of blocks " << NumberofBlocks;
 
-    for (int x = 0; x < (gridSize.nx-1)*(gridSize.ny-1)*(gridSize.nz-1); x++){
-        vector <int> new_vector;
-        grid.push_back(new_vector);
-    }
 
 
     ///Comento esta sección porque esto ya se va a hacer por la funcion reposition_particles
