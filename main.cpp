@@ -34,14 +34,34 @@ struct Particle{
     double a = 9.81;
     double p = 0;
 };
-
-
-struct Block{
-    int x;
-    int y;
-    int z;
-    vector<Particle> particles;
+//Structure for initially read variables ppm,np,m,h
+struct Initial_values{
+    float ppm;
+    int np;
+    double m;
+    double h;
 };
+//Global Variables
+float px;
+float py;
+float pz;
+float hvx;
+float hvy;
+float hvz;
+float vx;
+float vy;
+float vz;
+//Constants intialization
+double r = 1.695;
+double p = 1000;
+double ps = 3.0;
+double sc = 30000;
+double dv = 128.0;
+double nu = 0.4;
+double dp = 0.0002;
+double time_step = 0.001;
+int particle_num = 2;
+std::string address = "./small.fld";
 
 int particles_statistics(vector<Block> grid){
     int maximum = 0;
@@ -61,8 +81,6 @@ int particles_statistics(vector<Block> grid){
     average = average/block_number;
     cout << "\nThe average number of particles is: " << average << "\nThe maximum is: " << maximum << "\n The minimum is: " << minimum;
 }
-
-
 
 double distance_squared(Particle p1, Particle p2){
     double dx = p1.px - p2.px;
@@ -94,71 +112,41 @@ int find_block(Particle particle,vector<int> blockNumber,vector<double> block_si
     } else if (block_z > blockNumber[2]) {
         block_z = blockNumber[2]-1;
     }
-
-
     cout << "This is the x block " << block_x << ", y block " << block_y << ", z block " << block_z;
     int num_block = block_z + block_y*blockNumber[2] + block_x*blockNumber[2]*blockNumber[1];
     return num_block;
 }
 
-int main(int argc, char** argv) {
 
-    float ppm_float;
-    int np;
-
-    float px;
-    float py;
-    float pz;
-    float hvx;
-    float hvy;
-    float hvz;
-    float vx;
-    float vy;
-    float vz;
-    //Contsants intialization
-    double r = 1.695;
-    double p = 1000;
-    double ps = 3.0;
-    double sc = 30000;
-    double dv = 128.0;
-    double nu = 0.4;
-    double dp = 0.0002;
-    double time_step = 0.001;
-    int particle_num = 2;
+///FUNCTIONS FOR SIMULATION
 
 
 
 
-    //Constants for grid creation
-    //Remove normalization
-    vector<double> bmax = {0.08, 0.1, 0.08};
-    vector<double> bmin = {-0.08, -0.09, -0.08};
+
+void simulate(int nsteps, std::vector<Particle> particles){
+
+}
 
 
+///------------------------
 
-    //Parte de lectura de Juan crear todas las particulas
-    ifstream file("/Users/raulpineda/iCloud Drive (Archive)/Document/Arquitectura/Lab1/small.fld", ios::binary);
 
-    if (!file.is_open()) {
-        cerr << "Error opening file." << std::endl;
-        return 1;
-    }
-
+Initial_values read_general_info(ifstream &file){
     // Read ppm and np
-
     //cap 10-11
-    file.read(reinterpret_cast<char*>(&ppm_float), sizeof(float));
-    file.read(reinterpret_cast<char*>(&np), sizeof(int));
-    double ppm = static_cast<float>(ppm_float);
-    double m = p*pow(ppm,3);
-    double h = r/ppm;
-
-    std::cout << "ppm: " << ppm_float << ", np: " << np << std::endl;
-
-    // Create a vector to store particles
-    std::vector<Particle> particles;
-
-    for (int i = 0; i < np; ++i) {
+    Initial_values initialValues;
+    file.read(reinterpret_cast<char*>(&initialValues.ppm), sizeof(float));
+    file.read(reinterpret_cast<char*>(&initialValues.np), sizeof(int));
+    initialValues.ppm = static_cast<float>(initialValues.ppm);
+    initialValues.m = p*pow(initialValues.ppm,3);
+    initialValues.h = r/initialValues.ppm;
+    std::cout << "ppm: " << initialValues.ppm << ", np: " << initialValues.np << std::endl;
+    return initialValues;
+}
+int read_particle_info(ifstream &file,vector<Particle> &particles,Initial_values initialValues){
+    int counter;
+    for (int i = 0; i < initialValues.np; ++i) {
         Particle particle;
         file.read(reinterpret_cast<char*>(&px), sizeof(float));
         file.read(reinterpret_cast<char*>(&py), sizeof(float));
@@ -169,8 +157,6 @@ int main(int argc, char** argv) {
         file.read(reinterpret_cast<char*>(&vx), sizeof(float));
         file.read(reinterpret_cast<char*>(&vy), sizeof(float));
         file.read(reinterpret_cast<char*>(&vz), sizeof(float));
-
-
         particle.px = static_cast<double>(trunc(px));
         particle.py = static_cast<double>(py);
         particle.pz = static_cast<double>(pz);
@@ -181,41 +167,57 @@ int main(int argc, char** argv) {
         particle.vy = static_cast<double>(vy);
         particle.vz = static_cast<double>(vz);
         particles.push_back(particle);
+        counter = i;
     }
+    return counter;
+}
 
+vector<Particle> initial_read(std::string file_address,Initial_values &initialValues){
+    //Parte de lectura de Juan crear todas las particulas
+    ifstream file(file_address, ios::binary);
+    if (!file.is_open()) {
+        cerr << "Error opening file." << std::endl;
+        exit(1);
+    }
+    std::vector<Particle> particles;
+    initialValues = read_general_info(file);
+    int counter = read_particle_info(file,particles,initialValues);
+    if(counter == 0){
+        cout<< "Error : Invalid number of particles: " << counter <<".";
+    }
+    else if(counter != initialValues.np){
+        cout<<"Error : Number of particles mismatch. Header " << initialValues.np << " Found " << counter <<".";
+    }
     file.close();
-    int counter;
-    //Access particles
-    /*for (const Particle& particle : particles) {
-        std::cout << "Particle Data:" << counter  << std::endl;
-        std::cout << "px: " << particle.px << ", py: " << particle.py << ", pz: " << particle.pz << std::endl;
-        std::cout << "hvx: " << particle.hvx << ", hvy: " << particle.hvy << ", hvz: " << particle.hvz << std::endl;
-        std::cout << "vx: " << particle.vx << ", vy: " << particle.vy << ", vz: " << particle.vz << std::endl;
-        counter +=1;
-    }*/
+    return particles;
+}
+
+int main(int argc, char** argv) {
+    Initial_values initialValues;
+    std::vector<Particle> particles = initial_read(address,initialValues);
+    //Constants for grid creation
+    //Remove normalization
+    vector<double> bmax = {0.08, 0.1, 0.08};
+    vector<double> bmin = {-0.08, -0.09, -0.08};
+    // Create a vector to store particles
 
     double boxx = bmax[0] - bmin[0];
     double boxy = bmax[1] - bmin[1];
     double boxz = bmax[2] - bmin[2];
 
-    m = p/pow(ppm,3);
-    h = r/ppm;
-    cout << boxx;
+    //cout << boxx;
 
+    int nx = floor(boxx/initialValues.h);
+    int ny = floor(boxy/initialValues.h);
+    int nz = floor(boxz/initialValues.h);
 
-    int nx = floor(boxx/h);
-    int ny = floor(boxy/h);
-    int nz = floor(boxz/h);
-    cout << "\n r: " << r << " ppm: " << ppm;
+    //cout << "\n r: " << r << " ppm: " << ppm;
 
     double sx = boxx/nx;
     double sy = boxy/ny;
     double sz = boxz/nz;
     cout << "\n sx: " << sx << " sy " << sy << " sz " << sz;
     int NumberofBlocks = (nx-1)*(ny-1)*(nz-1);
-
-
-
 
     //Placing particles in blocks
     //Create a grid which is made of blocks
@@ -249,11 +251,11 @@ int main(int argc, char** argv) {
     vector<int> blockAmmount = {nx,ny,nz};
     vector<double> blockSize = {sx,sy,sz};
     int blockNumber;
-    counter = 0;
+    int count = 0;
     for (auto particle = particles.begin(); particle != particles.end(); particle++){
         blockNumber =  find_block(*particle,blockAmmount,blockSize,bmin);
-        cout << "\nThis is particle number: " << counter <<  "Block number" << blockNumber;
-        counter +=1;
+        cout << "\nThis is particle number: " << count <<  "Block number" << blockNumber;
+        count +=1;
         //For every y there are nz number of z blocks and for every x there are ny * nz number of blocks
 
         grid[blockNumber].particles.push_back(*particle);
@@ -261,35 +263,34 @@ int main(int argc, char** argv) {
 
 
 
-
+    ///Raul explicanos esta parte cuando lo leas, te queremos
     //Density computation
     double d;
     double i_density;
     double j_density;
     double density_inc;
     double acceleration_inc;
-    double density_constant_transformation_part = 64*M_PI*pow(h,9);
-    double densityConstantTransformation =  315 * m / density_constant_transformation_part;
+    double density_constant_transformation_part = 64*M_PI*pow(initialValues.h,9);
+    double densityConstantTransformation =  315 * initialValues.m / density_constant_transformation_part;
 
     for (auto i = particles.begin();i !=particles.end(); i++){
         for (auto j = i +1;j != particles.end(); j++){
             d = distance_squared(*i,*j);
-
-            if (d < h){
+            if (d < initialValues.h){
                 //Density
-                density_inc =pow((h*h-d),3);
+                density_inc =pow((initialValues.h*initialValues.h-d),3);
                 i_density = i->p + density_inc;
                 j_density = i->p +density_inc;
                 //Linear transformation
-                i->p =(i_density + pow(h,6))*densityConstantTransformation;
+                i->p =(i_density + pow(initialValues.h,6))*densityConstantTransformation;
                 //Check in optimization
-                j->p =(j_density + pow(h,6))*densityConstantTransformation;
+                j->p =(j_density + pow(initialValues.h,6))*densityConstantTransformation;
                 //Acceleration
                 //Local to each iteration
                 //Check formula later
-                i->hvx = i->hvx + ((i->px-j->px)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vx-j->vx)*nu*m)/(M_PI*pow(h,6)*i->p*j->p);
-                i->hvy = i->hvy + ((i->py-j->py)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vy-j->vy)*nu*m)/(M_PI*pow(h,6)*i->p*j->p);
-                i->hvz = i->hvz + ((i->pz-j->pz)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vz-j->vz)*nu*m)/(M_PI*pow(h,6)*i->p*j->p);
+                i->hvx = i->hvx + ((i->px-j->px)*15*initialValues.m*(initialValues.h-d)*(initialValues.h-d)*(i->p+j->p -p)+45*(i->vx-j->vx)*nu*initialValues.m)/(M_PI*pow(initialValues.h,6)*i->p*j->p);
+                i->hvy = i->hvy + ((i->py-j->py)*15*initialValues.m*(initialValues.h-d)*(initialValues.h-d)*(i->p+j->p -p)+45*(i->vy-j->vy)*nu*initialValues.m)/(M_PI*pow(initialValues.h,6)*i->p*j->p);
+                i->hvz = i->hvz + ((i->pz-j->pz)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vz-j->vz)*nu*initialValues.m)/(M_PI*pow(initialValues.h,6)*i->p*j->p);
             }
 
         }
