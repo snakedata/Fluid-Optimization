@@ -63,13 +63,13 @@ double time_step = 0.001;
 int particle_num = 2;
 std::string address = "./small.fld";
 
-int particles_statistics(vector<Block> grid){
+int particles_statistics(vector<vector<Particle>> grid){
     int maximum = 0;
     int minimum = 0;
     int particles_num;
     int average= 0 ;
     for (auto & i : grid){
-        particles_num = i.particles.size();
+        particles_num = i.size();
         if (particles_num > maximum){
             maximum = particles_num;
         }else if(particles_num < minimum){
@@ -221,29 +221,19 @@ int main(int argc, char** argv) {
 
     //Placing particles in blocks
     //Create a grid which is made of blocks
-    std::vector<Block> grid;
-    grid.reserve(NumberofBlocks);
-    int counterBlock= 0;
+    //Each block is a vector <Particle>
+    std::vector<vector<Particle>> grid;
 
     cout << "\nnx " << nx << " ny " << ny << " nz " << nz << " Number of blocks " << NumberofBlocks;
 
-    for (int x = 0; x < nx-1; x++){
-        for (int y = 0; y < ny-1; y++){
-            for (int z = 0; z < nz-1; z++){
-                counterBlock+=1;
-                Block block;
-                block.x = x;
-                block.y = y;
-                block.z = z;
-                grid.push_back(block);
-
-            }
-        }
+    for (int i = 0; i < (nx-1)*(ny-1)*(nz-1); i++){
+        std::vector<Particle> new_vector;
+        grid.push_back(new_vector);
     }
 
 
     //Grid organization
-    cout << "\n Grid organization";
+    std::cout << "\n Grid organization";
     int blockPositionx;
     int blockPositiony;
     int blockPositionz;
@@ -258,7 +248,7 @@ int main(int argc, char** argv) {
         count +=1;
         //For every y there are nz number of z blocks and for every x there are ny * nz number of blocks
 
-        grid[blockNumber].particles.push_back(*particle);
+        grid[blockNumber].push_back(*particle); ///Se puede usar este *??
     }
 
 
@@ -290,7 +280,7 @@ int main(int argc, char** argv) {
                 //Check formula later
                 i->hvx = i->hvx + ((i->px-j->px)*15*initialValues.m*(initialValues.h-d)*(initialValues.h-d)*(i->p+j->p -p)+45*(i->vx-j->vx)*nu*initialValues.m)/(M_PI*pow(initialValues.h,6)*i->p*j->p);
                 i->hvy = i->hvy + ((i->py-j->py)*15*initialValues.m*(initialValues.h-d)*(initialValues.h-d)*(i->p+j->p -p)+45*(i->vy-j->vy)*nu*initialValues.m)/(M_PI*pow(initialValues.h,6)*i->p*j->p);
-                i->hvz = i->hvz + ((i->pz-j->pz)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vz-j->vz)*nu*initialValues.m)/(M_PI*pow(initialValues.h,6)*i->p*j->p);
+                i->hvz = i->hvz + ((i->pz-j->pz)*15*initialValues.m*(initialValues.h-d)*(initialValues.h-d)*(i->p+j->p -p)+45*(i->vz-j->vz)*nu*initialValues.m)/(M_PI*pow(initialValues.h,6)*i->p*j->p);
             }
 
         }
