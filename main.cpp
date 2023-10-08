@@ -41,7 +41,17 @@ struct Initial_values{
     double m;
     double h;
 };
-//Global Variables
+
+struct GridSize{ /// Struct to store grid size, used later to ease arguments passing in fucntions
+    int nx;
+    int ny;
+    int nz;
+    double sx;
+    double sy;
+    double sz;
+};
+
+//Global Variables //porque está los componentes de una partícula como variables globales??!
 float px;
 float py;
 float pz;
@@ -62,8 +72,11 @@ double dp = 0.0002;
 double time_step = 0.001;
 int particle_num = 2;
 std::string address = "./small.fld";
+vector<double> bmax = {0.08, 0.1, 0.08};
+vector<double> bmin = {-0.08, -0.09, -0.08};
 
-int particles_statistics(vector<vector<Particle>> grid){
+
+int particles_statistics(vector<vector <Particle>> &grid){
     int maximum = 0;
     int minimum = 0;
     int particles_num;
@@ -95,25 +108,25 @@ double distance_squared(Particle p1, Particle p2){
  que le corresponden a cada bloque según su posición, y cuando querramos acceder a ese bloque desde el grid,
      cuyas posiciones están organizadas de esta manera*/
 
-int find_block(Particle particle,vector<int> blockNumber,vector<double> block_size,vector<double> min_coord){
-    int block_x = floor((particle.px - min_coord[0])/block_size[0]);
-    int block_y = floor((particle.py - min_coord[1])/block_size[1]);
-    int block_z = floor((particle.pz - min_coord[2])/block_size[2]);
+int find_block(Particle particle,GridSize gridSize){
+    int block_x = floor((particle.px - bmin[0])/gridSize.sx);
+    int block_y = floor((particle.py - bmin[1])/gridSize.sy);
+    int block_z = floor((particle.pz - bmin[2])/gridSize.sz);
     if (block_x < 0){
         block_x = 0;
-    } else if (block_x > blockNumber[0]) {
-        block_x = blockNumber[0]-1;
+    } else if (block_x >= gridSize.nx) {
+        block_x = gridSize.nx-1;
     }if (block_y < 0){
         block_y = 0;
-    } else if (block_y > blockNumber[1]) {
-        block_y = blockNumber[1]-1;
+    } else if (block_y >= gridSize.ny) {
+        block_y = gridSize.ny-1;
     }if (block_z < 0){
         block_z = 0;
-    } else if (block_z > blockNumber[2]) {
-        block_z = blockNumber[2]-1;
+    } else if (block_z >= gridSize.nz) {
+        block_z = gridSize.nz-1;
     }
     cout << "This is the x block " << block_x << ", y block " << block_y << ", z block " << block_z;
-    int num_block = block_z + block_y*blockNumber[2] + block_x*blockNumber[2]*blockNumber[1];
+    int num_block = block_z + block_y*gridSize.nz + block_x*gridSize.nz*gridSize.ny;
     return num_block;
 }
 
@@ -121,10 +134,14 @@ int find_block(Particle particle,vector<int> blockNumber,vector<double> block_si
 ///FUNCTIONS FOR SIMULATION
 
 
+void reposition_particles(std::vector<Particle> &particles, vector<vector<Particle>> &grid){
+    for (int i = 0; i < particles.size(); i++){
+        
+    }
+}
 
 
-
-void simulate(int nsteps, std::vector<Particle> particles){
+void simulate(int nsteps, std::vector<Particle> &particles, vector<vector<Particle>> &grid){
 
 }
 
@@ -197,9 +214,10 @@ int main(int argc, char** argv) {
     std::vector<Particle> particles = initial_read(address,initialValues);
     //Constants for grid creation
     //Remove normalization
-    vector<double> bmax = {0.08, 0.1, 0.08};
-    vector<double> bmin = {-0.08, -0.09, -0.08};
+
     // Create a vector to store particles
+
+    GridSize gridSize;
 
     double boxx = bmax[0] - bmin[0];
     double boxy = bmax[1] - bmin[1];
@@ -207,36 +225,35 @@ int main(int argc, char** argv) {
 
     //cout << boxx;
 
-    int nx = floor(boxx/initialValues.h);
-    int ny = floor(boxy/initialValues.h);
-    int nz = floor(boxz/initialValues.h);
+    gridSize.nx = floor(boxx/initialValues.h);
+    gridSize.ny = floor(boxy/initialValues.h);
+    gridSize.nz = floor(boxz/initialValues.h);
 
     //cout << "\n r: " << r << " ppm: " << ppm;
 
-    double sx = boxx/nx;
-    double sy = boxy/ny;
-    double sz = boxz/nz;
-    cout << "\n sx: " << sx << " sy " << sy << " sz " << sz;
-    int NumberofBlocks = (nx-1)*(ny-1)*(nz-1);
+    gridSize.sx = boxx/gridSize.nx;
+    gridSize.sy = boxy/gridSize.ny;
+    gridSize.sz = boxz/gridSize.nz;
+
+
+    //cout << "\n sx: " << sx << " sy " << sy << " sz " << sz;
 
     //Placing particles in blocks
     //Create a grid which is made of blocks
-    //Each block is a vector <Particle>
-    std::vector<vector<Particle>> grid;
+    std::vector<vector <int>> grid;
 
-    cout << "\nnx " << nx << " ny " << ny << " nz " << nz << " Number of blocks " << NumberofBlocks;
+    //cout << "\nnx " << nx << " ny " << ny << " nz " << nz << " Number of blocks " << NumberofBlocks;
 
-    for (int i = 0; i < (nx-1)*(ny-1)*(nz-1); i++){
-        std::vector<Particle> new_vector;
+    for (int x = 0; x < (gridSize.nx-1)*(gridSize.ny-1)*(gridSize.nz-1); x++){
+        vector <int> new_vector;
         grid.push_back(new_vector);
     }
 
 
+    ///Comento esta sección porque esto ya se va a hacer por la funcion reposition_particles
+    /*
     //Grid organization
-    std::cout << "\n Grid organization";
-    int blockPositionx;
-    int blockPositiony;
-    int blockPositionz;
+    cout << "\n Grid organization";
 
     vector<int> blockAmmount = {nx,ny,nz};
     vector<double> blockSize = {sx,sy,sz};
@@ -248,39 +265,43 @@ int main(int argc, char** argv) {
         count +=1;
         //For every y there are nz number of z blocks and for every x there are ny * nz number of blocks
 
-        grid[blockNumber].push_back(*particle); ///Se puede usar este *??
+        grid[blockNumber].push_back(*particle); ///ESTO SE PUDE USAR???
     }
-
+    */
 
 
     ///Raul explicanos esta parte cuando lo leas, te queremos
     //Density computation
+    
+    double m = initialValues.m;
+    double h = initialValues.h;
+    
     double d;
     double i_density;
     double j_density;
     double density_inc;
     double acceleration_inc;
-    double density_constant_transformation_part = 64*M_PI*pow(initialValues.h,9);
-    double densityConstantTransformation =  315 * initialValues.m / density_constant_transformation_part;
+    double density_constant_transformation_part = 64*M_PI*pow(h,9);
+    double densityConstantTransformation =  315 * m / density_constant_transformation_part;
 
     for (auto i = particles.begin();i !=particles.end(); i++){
         for (auto j = i +1;j != particles.end(); j++){
             d = distance_squared(*i,*j);
-            if (d < initialValues.h){
+            if (d < h){
                 //Density
-                density_inc =pow((initialValues.h*initialValues.h-d),3);
+                density_inc =pow((h*h-d),3);
                 i_density = i->p + density_inc;
                 j_density = i->p +density_inc;
                 //Linear transformation
-                i->p =(i_density + pow(initialValues.h,6))*densityConstantTransformation;
+                i->p =(i_density + pow(h,6))*densityConstantTransformation;
                 //Check in optimization
-                j->p =(j_density + pow(initialValues.h,6))*densityConstantTransformation;
+                j->p =(j_density + pow(h,6))*densityConstantTransformation;
                 //Acceleration
                 //Local to each iteration
                 //Check formula later
-                i->hvx = i->hvx + ((i->px-j->px)*15*initialValues.m*(initialValues.h-d)*(initialValues.h-d)*(i->p+j->p -p)+45*(i->vx-j->vx)*nu*initialValues.m)/(M_PI*pow(initialValues.h,6)*i->p*j->p);
-                i->hvy = i->hvy + ((i->py-j->py)*15*initialValues.m*(initialValues.h-d)*(initialValues.h-d)*(i->p+j->p -p)+45*(i->vy-j->vy)*nu*initialValues.m)/(M_PI*pow(initialValues.h,6)*i->p*j->p);
-                i->hvz = i->hvz + ((i->pz-j->pz)*15*initialValues.m*(initialValues.h-d)*(initialValues.h-d)*(i->p+j->p -p)+45*(i->vz-j->vz)*nu*initialValues.m)/(M_PI*pow(initialValues.h,6)*i->p*j->p);
+                i->hvx = i->hvx + ((i->px-j->px)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vx-j->vx)*nu*m)/(M_PI*pow(h,6)*i->p*j->p);
+                i->hvy = i->hvy + ((i->py-j->py)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vy-j->vy)*nu*m)/(M_PI*pow(h,6)*i->p*j->p);
+                i->hvz = i->hvz + ((i->pz-j->pz)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vz-j->vz)*nu*m)/(M_PI*pow(h,6)*i->p*j->p);
             }
 
         }
