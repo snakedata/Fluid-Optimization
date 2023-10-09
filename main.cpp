@@ -52,6 +52,17 @@ struct GridSize{ /// Struct to store grid size, used later to ease arguments pas
     double sz;
 };
 
+struct Grid{
+    GridSize size;
+    std::vector<std::vector<int>> blocks;
+};
+
+struct Acceleration{
+    double ax;
+    double ay;
+    double az;
+};
+
 //Global Variables //porque está los componentes de una partícula como variables globales??!
 float px;
 float py;
@@ -72,7 +83,7 @@ double nu = 0.4;
 double dp = 0.0002;
 double time_step = 0.001;
 int particle_num = 2;
-std::string address = "./small.fld";
+std::string address = "../new.fld";
 vector<double> bmax = {0.08, 0.1, 0.08};
 vector<double> bmin = {-0.08, -0.09, -0.08};
 
@@ -136,27 +147,95 @@ int find_block(Particle particle,GridSize gridSize){
     return num_block;
 }
 
+std::vector<int> get_contiguous_blocks(int current_block, GridSize gsize){
+    std::vector<int> contiguous_blocks;
+    int bx = current_block / (gsize.nz*gsize.ny);
+    int by = (current_block - bx*(gsize.nz*gsize.ny)) / gsize.nz;
+    int bz = current_block - (bx*gsize.nz*gsize.ny) - (by*gsize.nz);
 
-void AllBlocksArrayCreatiom(vector<Particle> &particles,GridSize gridSize){
-vector<vector<int>> all_blocks
-for (int x = 0; x < (gridSize.nx-1)*(gridSize.ny-1)*(gridSize.nz-1); x++){
-vector <int> new_vector;
-all_blocks.push_back(new_vector);
+    for (int x = -1; x < 2; x++){
+        if ( (bx + x>=0) && (bx + x <= gsize.nx-1)) {
+            for (int y = -1; y < 2; y++) {
+                if ( (by + y>=0) && (by + y <= gsize.ny-1)) {
+                    for (int z = -1; z < 2; z++) {
+                        if ( (bz + z>=0) && (bz + z <= gsize.nz-1)){
+                            int computed_block = (bz + z) + (by + y)*gsize.nz + (bx+x)*gsize.nz*gsize.ny;
+                            contiguous_blocks.push_back(computed_block);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return contiguous_blocks;
 }
-int insertion_block =0;
-for (int i = 0; i < particles.size(); i++){
-    insertion_block = find_block(particles[i],xxxxxx);
-    all_blocks[insertion_block].push_back(particles.at(i));
+
+void AllBlocksArrayCreation(vector<Particle> &particles,GridSize gridSize){
+    vector<vector<int>> all_blocks;
+    for (int x = 0; x < (gridSize.nx-1)*(gridSize.ny-1)*(gridSize.nz-1); x++){
+        vector <int> new_vector;
+        all_blocks.push_back(new_vector);
+
+    }
+    /*
+    int insertion_block =0;
+    for (int i = 0; i < particles.size(); i++){
+        insertion_block = find_block(particles[i],xxxxxx);
+        all_blocks[insertion_block].push_back(particles.at(i));
+    }
+     */
 }
+
+void densities_increase(std::vector<Particle> &particles, Grid &grid, vector<double> &densities, double h){
+    for (int i = 0; i < grid.blocks.size();i++){ ///Go through all blocks
+        vector<int> contiguous_blocks = get_contiguous_blocks(i,grid.size); ///Get contiguous blocks to current block
+        for (int p = 0; p < grid.blocks[i].size(); p++){ ///Go through each particle of the current block
+            Particle pi = particles[grid.blocks[i][p]];
+            for (int b = 0; b < contiguous_blocks.size(); b++){ ///Traverse the contiguous blocks
+                int c_block_index = contiguous_blocks[b]; /// Get the index of the contiguous block to traverse
+                for (int j = 0; j < grid.blocks[c_block_index].size();j++){ /// Go through each particle in the contiguous block
+                    Particle pj = particles[grid.blocks[c_block_index][j]];
+                    if (distance_squared(pi,pj)<(pow(h,2))){
+                        densities[grid.blocks[i][p]] += pow((pow(h,2) - distance_squared(pi,pj)),3);
+                    }
+
+                }
+            }
+        }
+    }
+}
+
+void densities_transform(vector<double> &densities, Initial_values initialValues){
+    for (int i = 0; i < densities.size(); i++){
+        densities[i] = (densities[i] + pow(initialValues.h,6))* (315*initialValues.m)/(64*M_PI* pow(initialValues.h,9));
+    }
 }
 
 ///FUNCTIONS FOR SIMULATION
 
 
-void reposition_particles(std::vector<Particle> &particles, vector<vector<Particle>> &all_blocks){
+void reposition_particles(std::vector<Particle> &particles, Grid &grid){
     for (int i = 0; i < particles.size(); i++){
-        
+        int index = find_block(particles[i],grid.size);
+        grid.blocks[index].push_back(i);
     }
+}
+
+void accelerations_computation(std::vector<Particle> &particles, Grid &grid){
+    vector <double> densities;
+    vector <Acceleration> accelerations;
+    for (int i = 0; i < particles.size(); i++){
+        densities.push_back(0);
+        struct Acceleration a;
+        a.ax = 0;
+        a.ay = -9.8;
+        a.az = 0;
+        accelerations.push_back(a);
+    }
+
+    ///Aqui meter densities_increase, densities_transform y acceleration transfer
+
 }
 
 
@@ -183,7 +262,7 @@ Initial_values read_general_info(ifstream &file){
     return initialValues;
 }
 int read_particle_info(ifstream &file,vector<Particle> &particles,Initial_values initialValues){
-    int counter;
+    int counter = 0;
     for (int i = 0; i < initialValues.np; ++i) {
         Particle particle;
         file.read(reinterpret_cast<char*>(&px), sizeof(float));
@@ -205,7 +284,7 @@ int read_particle_info(ifstream &file,vector<Particle> &particles,Initial_values
         particle.vy = static_cast<double>(vy);
         particle.vz = static_cast<double>(vz);
         particles.push_back(particle);
-        counter = i;
+        counter ++;
     }
     return counter;
 }
@@ -261,10 +340,23 @@ int main(int argc, char** argv) {
 
     //Placing particles in blocks
     //Create a grid which is made of blocks
-    std::vector<vector <int>> grid;
+    std::vector<vector <int>> all_blocks;
 
     //cout << "\nnx " << nx << " ny " << ny << " nz " << nz << " Number of blocks " << NumberofBlocks;
 
+    /*
+    GridSize g;
+    g.nx = 3;
+    g.ny = 5;
+    g.nz = 5;
+
+    std::vector<int> conti;
+    conti = get_contiguous_blocks(31,g);
+    for(int i = 0; i<conti.size();i++)
+        cout << conti[i]<< " ";
+
+    cout<<"\n";
+    */
 
 
     ///Comento esta sección porque esto ya se va a hacer por la funcion reposition_particles

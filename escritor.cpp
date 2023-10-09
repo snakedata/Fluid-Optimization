@@ -11,8 +11,8 @@ int main() {
     int numParticles = 10.0;
     float ppm = 2.3;
 
-    outfile.write(reinterpret_cast<const char*>(&numParticles), sizeof(int));
-    outfile.write(reinterpret_cast<const char*>(&ppm), sizeof(float ));
+    outfile.write(reinterpret_cast<const char *>(&ppm), sizeof(float));
+    outfile.write(reinterpret_cast<const char *>(&numParticles), sizeof(int));
 
     for (int i = 0; i < numParticles; i++){
         for (int x = 0; i<10; i++){

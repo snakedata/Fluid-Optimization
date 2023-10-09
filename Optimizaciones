@@ -1,6 +1,7 @@
 --------------------------------TAREAS-------------------------------------
 -Cambiar la estructura de Bloque
 -Densities arreglar y tambien hacer collisions
+-Cambiar Initial read para que lea hasta el final del archivo, no haciendo un loop de num_particles
 
 ----------------------------OPTIMIZACIONES---------------------------------
 
