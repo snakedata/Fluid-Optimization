@@ -8,6 +8,7 @@ LISTA DE POSIBLES OPTIMIZACIONES
 -Agregaar las particulas al vector al mismo tiempo que las leemos
 -Cambiar division por multiplicación del reciproco
 -Optimización de branches con not taken 
+-Use compiler explorer
 
 
 
