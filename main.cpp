@@ -86,8 +86,11 @@ int particle_num = 2;
 std::string address = "../new.fld";
 vector<double> bmax = {0.08, 0.1, 0.08};
 vector<double> bmin = {-0.08, -0.09, -0.08};
+double h;
+double m;
 
-
+///ESTA FUNCION PARA QUE SIRVE?
+/*
 int particles_statistics(vector<vector <Particle>> &grid){
     int maximum = 0;
     int minimum = 0;
@@ -187,17 +190,21 @@ void AllBlocksArrayCreation(vector<Particle> &particles,GridSize gridSize){
      */
 }
 
-void densities_increase(std::vector<Particle> &particles, Grid &grid, vector<double> &densities, double h){
+void densities_increase(std::vector<Particle> &particles, Grid &grid, vector<double> &densities){ /// Cambiar p por part, porque ya hay una varibale gloabl p
     for (int i = 0; i < grid.blocks.size();i++){ ///Go through all blocks
         vector<int> contiguous_blocks = get_contiguous_blocks(i,grid.size); ///Get contiguous blocks to current block
         for (int p = 0; p < grid.blocks[i].size(); p++){ ///Go through each particle of the current block
-            Particle pi = particles[grid.blocks[i][p]];
+            int particle_i_index = grid.blocks[i][p];
+            Particle pi = particles[particle_i_index];
             for (int b = 0; b < contiguous_blocks.size(); b++){ ///Traverse the contiguous blocks
                 int c_block_index = contiguous_blocks[b]; /// Get the index of the contiguous block to traverse
                 for (int j = 0; j < grid.blocks[c_block_index].size();j++){ /// Go through each particle in the contiguous block
-                    Particle pj = particles[grid.blocks[c_block_index][j]];
-                    if (distance_squared(pi,pj)<(pow(h,2))){
-                        densities[grid.blocks[i][p]] += pow((pow(h,2) - distance_squared(pi,pj)),3);
+                    int particle_j_index = grid.blocks[c_block_index][j];
+                    Particle pj = particles[particle_j_index];
+                    if (particle_i_index != particle_j_index) { /// Check pi != pj
+                        if (distance_squared(pi, pj) < (pow(h, 2))) {
+                            densities[particle_i_index] += pow((pow(h, 2) - distance_squared(pi, pj)), 3);
+                        }
                     }
 
                 }
@@ -206,10 +213,40 @@ void densities_increase(std::vector<Particle> &particles, Grid &grid, vector<dou
     }
 }
 
-void densities_transform(vector<double> &densities, Initial_values initialValues){
+void densities_transform(vector<double> &densities){
     for (int i = 0; i < densities.size(); i++){
-        densities[i] = (densities[i] + pow(initialValues.h,6))* (315*initialValues.m)/(64*M_PI* pow(initialValues.h,9));
+        densities[i] = (densities[i] + pow(h,6))* (315*m)/(64*M_PI* pow(h,9));
     }
+}
+
+void acceleration_transfer(std::vector<Particle> &particles, Grid &grid, vector<double> &densities, vector<Acceleration> &accelerations){
+    for (int i = 0; i < grid.blocks.size();i++){ ///Go through all blocks
+        vector<int> contiguous_blocks = get_contiguous_blocks(i,grid.size); ///Get contiguous blocks to current block
+        for (int part = 0; part < grid.blocks[i].size(); part++){ ///Go through each particle of the current block
+            int particle_i_index = grid.blocks[i][part];
+            Particle pi = particles[particle_i_index];
+            for (int b = 0; b < contiguous_blocks.size(); b++){ ///Traverse the contiguous blocks
+                int c_block_index = contiguous_blocks[b]; /// Get the index of the contiguous block to traverse
+                for (int j = 0; j < grid.blocks[c_block_index].size();j++){ /// Go through each particle in the contiguous block
+                    int particle_j_index = grid.blocks[c_block_index][j];
+                    Particle pj = particles[particle_j_index];
+                    if (particle_i_index != particle_j_index) { /// Check pi != pj
+                        double dist_squared = distance_squared(pi, pj);
+                        if (dist_squared < (pow(h, 2))) {
+                            double distij = sqrt(max(dist_squared, pow(10,-12))); /// In these 4 lines calculate distij as stated in project and update accelerations
+                            accelerations[particle_i_index].ax += ((pi.px - pj.px) * (15 / (M_PI*pow(h,6))) * (3 * m * ps/2) * pow(h-distij,2)/distij * (densities[particle_i_index] + densities[particle_j_index] - 2*p) + (pj.vx - pi.vx) * (45/(M_PI*pow(h,6)) )* nu * m)/(densities[particle_i_index] * densities[particle_j_index]);
+                            accelerations[particle_i_index].ay += ((pi.py - pj.py) * (15 / (M_PI*pow(h,6))) * (3 * m * ps/2) * pow(h-distij,2)/distij * (densities[particle_i_index] + densities[particle_j_index] - 2*p) + (pj.vy - pi.vy) * (45/(M_PI*pow(h,6)) )* nu * m)/(densities[particle_i_index] * densities[particle_j_index]);
+                            accelerations[particle_i_index].az += ((pi.pz - pj.pz) * (15 / (M_PI*pow(h,6))) * (3 * m * ps/2) * pow(h-distij,2)/distij * (densities[particle_i_index] + densities[particle_j_index] - 2*p) + (pj.vz - pi.vz) * (45/(M_PI*pow(h,6)) )* nu * m)/(densities[particle_i_index] * densities[particle_j_index]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void update_particle_block(Particle &particle, Grid &grid, vector<int> offset){
+
 }
 
 ///FUNCTIONS FOR SIMULATION
@@ -234,13 +271,71 @@ void accelerations_computation(std::vector<Particle> &particles, Grid &grid){
         accelerations.push_back(a);
     }
 
-    ///Aqui meter densities_increase, densities_transform y acceleration transfer
+    densities_increase(particles,grid,densities);
+    densities_transform(densities);
+    acceleration_transfer(particles,grid,densities,accelerations);
+
+}
+void particle_collision_with_X_axis(std::vector<Particle> &particles,  Grid &grid, std::vector <Acceleration> &accelerations) {
+
+    double X_increment =0;
+    //pared x=0
+    for (int i = 0; i < grid.size.nz*grid.size.ny; i++){     //the number of particles in the x axix is ny * nz twice x min and xmax
+            grid.blocks[i];
+            for (int j = 0; j < grid.blocks[i].size();j++) {
+                X_increment = dp-(particles[j].px-bmin[1]);  //dp − (x − xmin)
+                if(X_increment<= pow(10,-10))
+                    accelerations[j].ax = accelerations[j].ax + sc * X_increment - dv * particles[j].vx;       //ax + sc · ∆x − dv · vx
+
+            }
+    }
+}
+
+void particle_collision_with_Y_axis(std::vector<Particle> &particles , Grid &grid) {
+    for (int i = 0; i < grid.size.nx*grid.size.nz; i++){
+        int index = find_block(particles[i],);
+        grid.blocks[index].push_back(i);
+    }
+}
+void particle_collision_with_Z_axis(std::vector<Particle> &particles, Grid &grid) {
+    for (int i = 0; i < grid.size.nx*grid.size.ny; i++){
+        int index = find_block(particles[i],);
+        grid.blocks[index].push_back(i);
+    }
+}
+void particle_collision(std::vector<Particle> &particles, GridSize &gridSize){
+
 
 }
 
+void particles_motion(std::vector<Particle> &particles, std::vector <Acceleration> &accelerations){
+    for (int i = 0; i < particles.size(); i++){
 
-void simulate(int nsteps, std::vector<Particle> &particles, vector<vector<Particle>> &all_blocks){
+        double move_x = particles[i].hvx*time_step + accelerations[i].ax*pow(time_step,2);
+        double move_y = particles[i].hvy*time_step + accelerations[i].ay*pow(time_step,2);
+        double move_z = particles[i].hvz*time_step + accelerations[i].az*pow(time_step,2);
 
+        particles[i].px += move_x;
+        particles[i].py += move_y;
+        particles[i].pz += move_z;
+        particles[i].vx = particles[i].hvx + (accelerations[i].ax*time_step)/2;
+        particles[i].vy = particles[i].hvy + (accelerations[i].ay*time_step)/2;
+        particles[i].vz = particles[i].hvz + (accelerations[i].az*time_step)/2;
+        particles[i].hvx = particles[i].hvx + accelerations[i].ax*time_step;
+        particles[i].hvy = particles[i].hvy + accelerations[i].ay*time_step;
+        particles[i].hvz = particles[i].hvz + accelerations[i].az*time_step;
+    }
+}
+void simulate(int nsteps, std::vector<Particle> &particles, Grid &grid){
+    vector <double> densities;
+    vector <Acceleration> accelerations;
+    //Stages of Simulation
+    //Stage 1: Reposition Particles
+    reposition_particles(particles,grid);
+    //Stage 2: Accelerations computation
+    accelerations_computation(particles,grid,densities,accelerations);
+    //stage 4: Particles motion
+    particles_motion(particles,accelerations);
 }
 
 
@@ -311,8 +406,9 @@ vector<Particle> initial_read(std::string file_address,Initial_values &initialVa
 
 int main(int argc, char** argv) {
     Initial_values initialValues;
-    std::vector<Particle> particles = initial_read(address,initialValues);
-    //Constants for grid creation
+    std::vector<Particle> particles = initial_read(argv[2],initialValues);
+    h = initialValues.h;
+    m = initialValues.m;
     //Remove normalization
 
     // Create a vector to store particles
@@ -381,10 +477,7 @@ int main(int argc, char** argv) {
 
     ///Raul explicanos esta parte cuando lo leas, te queremos
     //Density computation
-    
-    double m = initialValues.m;
-    double h = initialValues.h;
-    
+    /*
     double d;
     double i_density;
     double j_density;
