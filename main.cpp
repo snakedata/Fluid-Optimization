@@ -5,7 +5,6 @@
 #include <cmath>
 #include <vector>
 
-
 //1-11 17- end
 using namespace std;
 //External libraries
@@ -14,7 +13,7 @@ using namespace std;
 
 //Twenty lines per function maximum
 //Pointer arithmetic forbidden
-//output.write(reninterpret_cast<char*>(&x),sizeof(x)); //NOLINT(..)
+//output.write(reinterpret_cast<char*>(&x),sizeof(x)); //NOLINT(..)
 //Vectores iniciales - fuerzas resultantes -
 //Unique pointer or shared point
 
@@ -32,8 +31,6 @@ struct Particle{
     double vx;
     double vy;
     double vz;
-    double a = 9.81;
-    double p = 0;
 };
 //Structure for initially read variables ppm,np,m,h
 struct Initial_values{
@@ -73,17 +70,18 @@ float hvz;
 float vx;
 float vy;
 float vz;
-//Constants intialization
+//Constants initialization
 double r = 1.695;
 double p = 1000;
 double ps = 3.0;
 double sc = 30000;
 double dv = 128.0;
 double nu = 0.4;
-double dp = 0.0002;
+double dp = 0.0002; //Particle Size
 double time_step = 0.001;
 int particle_num = 2;
-std::string address = "../new.fld";
+double g = 9.8;
+//std::string address = "../new.fld";
 vector<double> bmax = {0.08, 0.1, 0.08};
 vector<double> bmin = {-0.08, -0.09, -0.08};
 double h;
@@ -108,7 +106,7 @@ int particles_statistics(vector<vector <Particle>> &grid){
     int block_number = grid.size();
     average = average/block_number;
     cout << "\nThe average number of particles is: " << average << "\nThe maximum is: " << maximum << "\n The minimum is: " << minimum;
-}
+}*/
 
 double distance_squared(Particle p1, Particle p2){
     double dx = p1.px - p2.px;
@@ -116,9 +114,7 @@ double distance_squared(Particle p1, Particle p2){
     double dz = p1.pz - p2.pz;
 
     return dx * dx + dy * dy + dz * dz;
-};
-
-
+}
 ///FUNCTIONS FOR SIMULATION
 
 
@@ -206,7 +202,6 @@ void densities_increase(std::vector<Particle> &particles, Grid &grid, vector<dou
                             densities[particle_i_index] += pow((pow(h, 2) - distance_squared(pi, pj)), 3);
                         }
                     }
-
                 }
             }
         }
@@ -259,14 +254,15 @@ void reposition_particles(std::vector<Particle> &particles, Grid &grid){
     }
 }
 
-void accelerations_computation(std::vector<Particle> &particles, Grid &grid){
-    vector <double> densities;
-    vector <Acceleration> accelerations;
+void accelerations_computation(std::vector<Particle> &particles, Grid &grid,std::vector <double> &densities, std::vector <Acceleration> &accelerations){
+    //initialization of densities and accelerations
+    densities.clear();
+    accelerations.clear();
     for (int i = 0; i < particles.size(); i++){
         densities.push_back(0);
         struct Acceleration a;
         a.ax = 0;
-        a.ay = -9.8;
+        a.ay = -g;
         a.az = 0;
         accelerations.push_back(a);
     }
@@ -356,9 +352,9 @@ Initial_values read_general_info(ifstream &file){
     std::cout << "ppm: " << initialValues.ppm << ", np: " << initialValues.np << std::endl;
     return initialValues;
 }
-int read_particle_info(ifstream &file,vector<Particle> &particles,Initial_values initialValues){
+int read_particle_info(ifstream &file,vector<Particle> &particles){
     int counter = 0;
-    for (int i = 0; i < initialValues.np; ++i) {
+    while(!file.eof()){
         Particle particle;
         file.read(reinterpret_cast<char*>(&px), sizeof(float));
         file.read(reinterpret_cast<char*>(&py), sizeof(float));
@@ -381,19 +377,19 @@ int read_particle_info(ifstream &file,vector<Particle> &particles,Initial_values
         particles.push_back(particle);
         counter ++;
     }
-    return counter;
-}
+    return counter;}
 
 vector<Particle> initial_read(std::string file_address,Initial_values &initialValues){
-    //Parte de lectura de Juan crear todas las particulas
+    //Read file
     ifstream file(file_address, ios::binary);
-    if (!file.is_open()) {
-        cerr << "Error opening file." << std::endl;
-        exit(1);
+    if (!file.is_open()) { //Check error opening
+        cout<<"Error: Cannot open " << file_address <<" for reading";
+        exit (-3);
     }
-    std::vector<Particle> particles;
-    initialValues = read_general_info(file);
-    int counter = read_particle_info(file,particles,initialValues);
+    std::vector<Particle> particles; //Iniatilize a vector of particles to be stored
+    initialValues = read_general_info(file);//call to a function to read parameters
+    //
+    int counter = read_particle_info(file,particles);
     if(counter == 0){
         cout<< "Error : Invalid number of particles: " << counter <<".";
     }
@@ -404,7 +400,31 @@ vector<Particle> initial_read(std::string file_address,Initial_values &initialVa
     return particles;
 }
 
+void check_command_errors(int argc,char** argv) {
+    if (argc != 3) {
+        cout << "Error: Invalid number of arguments: " << argc << ".";
+        exit(-1);
+    }
+    int i=0;
+    while (argv[1] != "\0") {
+        if (!isdigit((argv[1])[i])) {
+            exit(-1);
+        }
+        i++;
+    }
+    if((argv[1])[0] == '-'){
+        exit (-2);
+    }
+
+}
+
+void write_to_file(std::string output_file_address,std::vector<Particle> particles,Initial_values initialValues){
+
+
+}
+
 int main(int argc, char** argv) {
+    check_command_errors(argc,argv);
     Initial_values initialValues;
     std::vector<Particle> particles = initial_read(argv[2],initialValues);
     h = initialValues.h;
@@ -508,7 +528,7 @@ int main(int argc, char** argv) {
 
         }
     }
-
+*/
 //Collisions
 
 
