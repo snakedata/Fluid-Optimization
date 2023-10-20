@@ -170,21 +170,15 @@ std::vector<int> get_contiguous_blocks(int current_block, GridSize gsize){
     return contiguous_blocks;
 }
 
-void AllBlocksArrayCreation(vector<Particle> &particles,GridSize gridSize){
-    vector<vector<int>> all_blocks;
-    for (int x = 0; x < (gridSize.nx-1)*(gridSize.ny-1)*(gridSize.nz-1); x++){
-        vector <int> new_vector;
-        all_blocks.push_back(new_vector);
-
-    }
-    /*
-    int insertion_block =0;
+/*
+void reposition_particles(std::vector<Particle> &particles, Grid &grid){
     for (int i = 0; i < particles.size(); i++){
-        insertion_block = find_block(particles[i],xxxxxx);
-        all_blocks[insertion_block].push_back(particles.at(i));
+        int index = find_block(particles[i],grid.size);
+        grid.blocks[index].push_back(i);
     }
-     */
 }
+*/
+
 
 void densities_increase(std::vector<Particle> &particles, Grid &grid, vector<double> &densities){ /// Cambiar p por part, porque ya hay una varibale gloabl p
     for (int i = 0; i < grid.blocks.size();i++){ ///Go through all blocks
@@ -240,11 +234,6 @@ void acceleration_transfer(std::vector<Particle> &particles, Grid &grid, vector<
     }
 }
 
-void update_particle_block(Particle &particle, Grid &grid, vector<int> offset){
-
-}
-
-///FUNCTIONS FOR SIMULATION
 
 
 void reposition_particles(std::vector<Particle> &particles, Grid &grid){
@@ -362,6 +351,8 @@ void particles_motion(std::vector<Particle> &particles, std::vector <Acceleratio
         double move_y = particles[i].hvy*time_step + accelerations[i].ay*pow(time_step,2);
         double move_z = particles[i].hvz*time_step + accelerations[i].az*pow(time_step,2);
 
+        int old_block = find_block(particles[i],grid.size);
+
         particles[i].px += move_x;
         particles[i].py += move_y;
         particles[i].pz += move_z;
@@ -371,6 +362,19 @@ void particles_motion(std::vector<Particle> &particles, std::vector <Acceleratio
         particles[i].hvx = particles[i].hvx + accelerations[i].ax*time_step;
         particles[i].hvy = particles[i].hvy + accelerations[i].ay*time_step;
         particles[i].hvz = particles[i].hvz + accelerations[i].az*time_step;
+
+        int new_block = find_block(particles[i],grid.size);
+
+        if (old_block!=new_block){
+            grid.blocks[new_block].push_back(i);
+
+            auto x = grid.blocks[old_block].begin();
+            while ( *x != i){x++;}
+
+            grid.blocks[old_block].erase(x);
+
+        }
+
     }
 }
 void simulate(int nsteps, std::vector<Particle> &particles, Grid &grid){
@@ -385,7 +389,32 @@ void simulate(int nsteps, std::vector<Particle> &particles, Grid &grid){
     particles_motion(particles,accelerations);
 }
 
+Grid grid_initialization(Initial_values initialValues,vector<Particle> &particles){
+    double boxx = bmax[0] - bmin[0];
+    double boxy = bmax[1] - bmin[1];
+    double boxz = bmax[2] - bmin[2];
+    GridSize gridSize;
+    gridSize.nx = floor(boxx/initialValues.h);
+    gridSize.ny = floor(boxy/initialValues.h);
+    gridSize.nz = floor(boxz/initialValues.h);
 
+    //cout << "\n r: " << r << " ppm: " << ppm;
+
+    gridSize.sx = boxx/gridSize.nx;
+    gridSize.sy = boxy/gridSize.ny;
+    gridSize.sz = boxz/gridSize.nz;
+    std::vector<vector <int>> blocks = gridCreation(particles,gridSize);
+    Grid grid;
+    grid.size = gridSize;
+    grid.blocks = blocks;
+
+    for (int i = 0; i < particles.size(); i++){
+        int index = find_block(particles[i],grid.size);
+        grid.blocks[index].push_back(i);
+    }
+
+    return grid;
+}
 
 
 ///------------------------
@@ -480,111 +509,11 @@ int main(int argc, char** argv) {
     std::vector<Particle> particles = initial_read(argv[2],initialValues);
     h = initialValues.h;
     m = initialValues.m;
-    //Remove normalization
-
-    // Create a vector to store particles
-
-    GridSize gridSize;
-
-    double boxx = bmax[0] - bmin[0];
-    double boxy = bmax[1] - bmin[1];
-    double boxz = bmax[2] - bmin[2];
-
-    //cout << boxx;
-
-    gridSize.nx = floor(boxx/initialValues.h);
-    gridSize.ny = floor(boxy/initialValues.h);
-    gridSize.nz = floor(boxz/initialValues.h);
-
-    //cout << "\n r: " << r << " ppm: " << ppm;
-
-    gridSize.sx = boxx/gridSize.nx;
-    gridSize.sy = boxy/gridSize.ny;
-    gridSize.sz = boxz/gridSize.nz;
-
-
-    //cout << "\n sx: " << sx << " sy " << sy << " sz " << sz;
-
-    //Placing particles in blocks
-    //Create a grid which is made of blocks
-    std::vector<vector <int>> all_blocks;
-
-    //cout << "\nnx " << nx << " ny " << ny << " nz " << nz << " Number of blocks " << NumberofBlocks;
-
-    /*
-    GridSize g;
-    g.nx = 3;
-    g.ny = 5;
-    g.nz = 5;
-
-    std::vector<int> conti;
-    conti = get_contiguous_blocks(31,g);
-    for(int i = 0; i<conti.size();i++)
-        cout << conti[i]<< " ";
-
-    cout<<"\n";
-    */
-
-
-    ///Comento esta sección porque esto ya se va a hacer por la funcion reposition_particles
-    /*
-    //Grid organization
-    cout << "\n Grid organization";
-
-    vector<int> blockAmmount = {nx,ny,nz};
-    vector<double> blockSize = {sx,sy,sz};
-    int blockNumber;
-    int count = 0;
-    for (auto particle = particles.begin(); particle != particles.end(); particle++){
-        blockNumber =  find_block(*particle,blockAmmount,blockSize,bmin);
-        cout << "\nThis is particle number: " << count <<  "Block number" << blockNumber;
-        count +=1;
-        //For every y there are nz number of z blocks and for every x there are ny * nz number of blocks
-
-        grid[blockNumber].push_back(*particle); ///ESTO SE PUDE USAR???
-    }
-    */
-
-
-    ///Raul explicanos esta parte cuando lo leas, te queremos
-    //Density computation
-    /*
-    double d;
-    double i_density;
-    double j_density;
-    double density_inc;
-    double acceleration_inc;
-    double density_constant_transformation_part = 64*M_PI*pow(h,9);
-    double densityConstantTransformation =  315 * m / density_constant_transformation_part;
-
-    for (auto i = particles.begin();i !=particles.end(); i++){
-        for (auto j = i +1;j != particles.end(); j++){
-            d = distance_squared(*i,*j);
-            if (d < h){
-                //Density
-                density_inc =pow((h*h-d),3);
-                i_density = i->p + density_inc;
-                j_density = i->p +density_inc;
-                //Linear transformation
-                i->p =(i_density + pow(h,6))*densityConstantTransformation;
-                //Check in optimization
-                j->p =(j_density + pow(h,6))*densityConstantTransformation;
-                //Acceleration
-                //Local to each iteration
-                //Check formula later
-                i->hvx = i->hvx + ((i->px-j->px)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vx-j->vx)*nu*m)/(M_PI*pow(h,6)*i->p*j->p);
-                i->hvy = i->hvy + ((i->py-j->py)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vy-j->vy)*nu*m)/(M_PI*pow(h,6)*i->p*j->p);
-                i->hvz = i->hvz + ((i->pz-j->pz)*15*m*(h-d)*(h-d)*(i->p+j->p -p)+45*(i->vz-j->vz)*nu*m)/(M_PI*pow(h,6)*i->p*j->p);
-            }
-
-        }
-    }
-*/
-//Collisions
-
-
-//Write floats use standard conversion static cast or narrow cast
-
-///Looooooooooooooooooooooooooooool
-
+    Grid grid = grid_initialization(initialValues,particles);
+    cout<<"h5\n";
+    simulate(stoi(argv[2]),particles,grid);
+    cout<<"h6\n";
+    write_to_file(argv[3],particles);
+    cout<<"h7\n";
+    return 0;
 }
