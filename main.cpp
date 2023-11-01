@@ -5,21 +5,7 @@
 #include <cmath>
 #include <vector>
 
-//1-11 17- end
 using namespace std;
-//External libraries
-//GSL
-//Google Test
-
-//Twenty lines per function maximum
-//Pointer arithmetic forbidden
-//output.write(reinterpret_cast<char*>(&x),sizeof(x)); //NOLINT(..)
-//Vectores iniciales - fuerzas resultantes -
-//Unique pointer or shared point
-
-//Vector of blocks where each block is a list or vector of particles
-
-
 
 struct Particle{
     double px;
@@ -123,15 +109,16 @@ Initial_values read_general_info(ifstream &file){
     Initial_values initialValues;
     file.read(reinterpret_cast<char*>(&initialValues.ppm), sizeof(float));
     file.read(reinterpret_cast<char*>(&initialValues.np), sizeof(int));
-    initialValues.ppm = static_cast<float>(initialValues.ppm);
+    initialValues.ppm = static_cast<float>(initialValues.ppm); ///Esto no debería ser double en vez de float??????
     initialValues.m = p*pow(initialValues.ppm,3);
     initialValues.h = r/initialValues.ppm;
     std::cout << "ppm: " << initialValues.ppm << ", np: " << initialValues.np << std::endl;
     return initialValues;
 }
+
 int read_particle_info(ifstream &file,vector<Particle> &particles){
-    int counter = -1;
-    while(!file.eof()){
+    int counter = 0;
+    while(file.peek()!=EOF){
         counter ++;
         Particle particle;
         file.read(reinterpret_cast<char*>(&px), sizeof(float));
@@ -179,13 +166,17 @@ vector<Particle> initial_read(std::string file_address,Initial_values &initialVa
 
 
 
-void write_to_file(std::string output_file_address,std::vector<Particle> particles){
+void write_to_file(std::string output_file_address,std::vector<Particle> particles, Initial_values &initialValues){
     //Write to the file all the new values
     ofstream output_file(output_file_address, ios::binary);
     if (!output_file.is_open()) { //Check error opening
         cout<<"Error: Cannot open " << output_file_address <<" for writing";
         exit (-3);
     }
+
+    output_file.write(reinterpret_cast<char*>(&initialValues.ppm), sizeof(float));
+    output_file.write(reinterpret_cast<char*>(&initialValues.np), sizeof(int));
+
     for (int i = 0; i < particles.size(); i++){
         px = static_cast<float>(particles[i].px);
         py = static_cast<float>(particles[i].py);
@@ -196,21 +187,22 @@ void write_to_file(std::string output_file_address,std::vector<Particle> particl
         vx = static_cast<float>(particles[i].vx);
         vy = static_cast<float>(particles[i].vy);
         vz = static_cast<float>(particles[i].vz);
-        output_file.write(reinterpret_cast<char*>(&px), sizeof(float));
-        output_file.write(reinterpret_cast<char*>(&py), sizeof(float));
-        output_file.write(reinterpret_cast<char*>(&pz), sizeof(float));
-        output_file.write(reinterpret_cast<char*>(&hvx), sizeof(float));
-        output_file.write(reinterpret_cast<char*>(&hvy), sizeof(float));
-        output_file.write(reinterpret_cast<char*>(&hvz), sizeof(float));
-        output_file.write(reinterpret_cast<char*>(&vx), sizeof(float));
-        output_file.write(reinterpret_cast<char*>(&vy), sizeof(float));
-        output_file.write(reinterpret_cast<char*>(&vz), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&px), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&py), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&pz), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&hvx), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&hvy), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&hvz), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&vx), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&vy), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&vz), sizeof(float));
+        //output_file.write("\n", sizeof(char ));
     }
     output_file.close();
 }
 vector <vector<int>> gridCreation(vector<Particle> &particles,GridSize gridSize){
     vector<vector<int>> blocks;
-    for (int x = 0; x < (gridSize.nx-1)*(gridSize.ny-1)*(gridSize.nz-1); x++){
+    for (int x = 0; x < (gridSize.nx)*(gridSize.ny)*(gridSize.nz); x++){
         vector <int> new_vector;
         blocks.push_back(new_vector);
     }
@@ -225,7 +217,7 @@ void check_command_errors(int argc,char** argv) {
         exit(-1);
     }
     int i=0;
-    while ('argv[1]' != '\0') {
+    while (argv[1][0] != '\0') {
         if (!isdigit((argv[1])[i])) {
             exit(-1);
         }
@@ -312,7 +304,7 @@ void densities_increase(std::vector<Particle> &particles, Grid &grid, vector<dou
         contiguous_blocks = get_contiguous_blocks(i,grid.size); ///Get contiguous blocks to current block
         for (int p = 0; p < grid.blocks[i].size(); p++){ ///Go through each particle of the current block
             particle_i_index = grid.blocks[i][p];
-             pi = particles[particle_i_index];
+            pi = particles[particle_i_index];
             for (int b = 0; b < contiguous_blocks.size(); b++){ ///Traverse the contiguous blocks
                 c_block_index = contiguous_blocks[b]; /// Get the index of the contiguous block to traverse
                 for (int j = 0; j < grid.blocks[c_block_index].size();j++){ /// Go through each particle in the contiguous block
@@ -629,17 +621,18 @@ Grid grid_initialization(Initial_values initialValues,vector<Particle> &particle
 
 ///------------------------
 
-    
+
 
 
 
 int main(int argc, char** argv) {
+    /*
     cout<<"h1\n";
     //check_command_errors(argc,argv);
     cout<<"h2\n";
     Initial_values initialValues;
     cout<<"h3\n";
-    std::vector<Particle> particles = initial_read(argv[2],initialValues);
+    std::vector<Particle> particles = initial_read(argv[1],initialValues);
     cout<<"h4\n";
     h = initialValues.h;
     m = initialValues.m;
@@ -649,5 +642,13 @@ int main(int argc, char** argv) {
     cout<<"h6\n";
     write_to_file(argv[3],particles);
     cout<<"h7\n";
+     */
+
+    Initial_values initialValues;
+    std::vector<Particle> myparticles = initial_read(argv[2],initialValues);
+    cout<<"Num particles: "<<myparticles.size()<<'\n';
+    write_to_file(argv[3],myparticles, initialValues);
+
+
     return 0;
 }
