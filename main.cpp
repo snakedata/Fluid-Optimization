@@ -206,6 +206,7 @@ vector <vector<int>> gridCreation(vector<Particle> &particles,GridSize gridSize)
         vector <int> new_vector;
         blocks.push_back(new_vector);
     }
+    cout<<"Before : "<< blocks.size()<<'\n';
     return blocks;
 }
 
@@ -609,10 +610,13 @@ Grid grid_initialization(Initial_values initialValues,vector<Particle> &particle
     Grid grid;
     grid.size = gridSize;
     grid.blocks = blocks;
+    cout<<"After : "<<grid.blocks.size()<<'\n';
 
     for (int i = 0; i < particles.size(); i++){
         int index = find_block(particles[i],grid.size);
+        //cout<<i<<' ';
         grid.blocks[index].push_back(i);
+
     }
 
     return grid;
@@ -646,9 +650,30 @@ int main(int argc, char** argv) {
 
     Initial_values initialValues;
     std::vector<Particle> myparticles = initial_read(argv[2],initialValues);
-    cout<<"Num particles: "<<myparticles.size()<<'\n';
-    write_to_file(argv[3],myparticles, initialValues);
+    cout<<"\nNum particles: "<<myparticles.size()<<'\n';
+    //write_to_file(argv[3],myparticles, initialValues);
+
+    Grid grid = grid_initialization(initialValues,myparticles);
 
 
+   cout<<"grid.blocks.size() = "<<grid.blocks.size()<<'\n';
+    int saved_particles = 0;
+    for (int i = 0; i< grid.blocks.size();i++) {
+
+        if (grid.blocks[i].size()>0) {
+            cout << '\n';
+            cout<<"grid.blocks["<<i<<"].size() = "<<grid.blocks[i].size()<<'\n';
+            saved_particles += grid.blocks[i].size();
+        }
+        for (int x = 0; x < grid.blocks[i].size(); x++) {
+            cout << grid.blocks[i][x] << ' ';
+        }
+
+    }
+
+    cout<<'\n'<<"saved_particles = "<<saved_particles<<'\n';
+
+    simulate(1,myparticles,grid);
+    write_to_file(argv[3],myparticles,initialValues);
     return 0;
 }
