@@ -381,8 +381,8 @@ void particle_collision_with_X_axis(std::vector<Particle> &particles,  Grid &gri
     double increment =0;
     //pared x_0
     for (int i = 0; i < grid.size.nz*grid.size.ny; i++){                        //the number of particles in the x axix is ny * nz twice x min and xmax
-        grid.blocks[i];// esta linea se puede omitir?
         for (int j = 0; j < grid.blocks[i].size();j++) {
+
             increment = dp-(particles[j].px-bmin[0]);                                                    //dp − (x − xmin)
             if(increment> pow(10,-10))
                 accelerations[j].ax = accelerations[j].ax + (sc * increment - dv * particles[j].vx);       //  ax + (cs · ∆x − dv · vx)
@@ -390,8 +390,7 @@ void particle_collision_with_X_axis(std::vector<Particle> &particles,  Grid &gri
         }
     }
     //pared x_max
-    for (int i = (grid.size.nz*grid.size.ny*grid.size.nx - grid.size.nz*grid.size.ny); i < grid.size.nz*grid.size.ny; i++){
-        grid.blocks[i];
+    for (int i = (grid.size.nz*grid.size.ny*grid.size.nx - grid.size.nz*grid.size.ny)-1; i < grid.size.nz*grid.size.ny*grid.size.nx; i++){
         for (int j = 0; j < grid.blocks[i].size();j++) {
             increment = dp-(bmax[0]-particles[j].px);                                                    //dp − (xmax − x)
             if(increment> pow(10,-10))
@@ -406,7 +405,7 @@ void particle_collision_with_Y_axis(std::vector<Particle> &particles , Grid &gri
     double increment =0;
     int block_index=0;
     for (int i = 0; i < grid.size.nx; i++){     //the number of particles in the x axix is ny * nz twice x min and xmax
-        for (int j = 0, k=grid.size.nz*(grid.size.ny-2); j < grid.size.nz; j++,k++) {
+        for (int j = 0, k=grid.size.nz*(grid.size.ny-1); j < grid.size.nz; j++,k++) {
             //pared Y_0
             block_index = j + i * grid.size.nz * grid.size.ny;
             for (int l = 0; l < grid.blocks[block_index].size(); l++) {
@@ -430,7 +429,7 @@ void particle_collision_with_Z_axis(std::vector<Particle> &particles, Grid &grid
 
 
     double increment =0;
-    for (int i = 0,j =grid.size.nz-2; i < grid.size.nz*grid.size.ny*grid.size.nx; i+=grid.size.nz, j+=grid.size.nz){     //the number of particles in the x axix is ny * nz twice x min and xmax
+    for (int i = 0,j =grid.size.nz-1; i < grid.size.nz*grid.size.ny*grid.size.nx; i+=grid.size.nz, j+=grid.size.nz){     //the number of particles in the x axix is ny * nz twice x min and xmax
         //pared Z_0
         for (int l = 0; l < grid.blocks[i].size(); l++) {
             increment =dp - (particles[l].pz - bmin[2]);                                             //dp − (z − zmin)
@@ -450,7 +449,7 @@ void X_boundary_interaction(std::vector<Particle> &particles,  Grid &grid) {
     //pared x_0
     double distance_x;
     for (int i = 0; i < grid.size.nz*grid.size.ny; i++){                        //the number of particles in the x axix is ny * nz twice x min and xmax
-        grid.blocks[i];// esta linea se puede omitir?
+        //grid.blocks[i];// esta linea se puede omitir?
         for (int j = 0; j < grid.blocks[i].size();j++) {
             distance_x = particles[i].px-bmin[0];
             if (distance_x < 0){
@@ -461,7 +460,7 @@ void X_boundary_interaction(std::vector<Particle> &particles,  Grid &grid) {
         }
     }
     //pared x_max
-    for (int i = (grid.size.nz*grid.size.ny*grid.size.nx - grid.size.nz*grid.size.ny); i < grid.size.nz*grid.size.ny; i++){
+    for (int i = (grid.size.nz*grid.size.ny*grid.size.nx - grid.size.nz*grid.size.ny); i < grid.size.nz*grid.size.ny*grid.size.nx; i++){
         grid.blocks[i];
         for (int j = 0; j < grid.blocks[i].size();j++) {
             distance_x = bmax[0]-particles[i].px;
@@ -479,7 +478,7 @@ void Y_boundary_interaction(std::vector<Particle> &particles,  Grid &grid) {
     double distance_y;
     int block_index;
     for (int i = 0; i < grid.size.nx; i++){     //the number of particles in the x axix is ny * nz twice x min and xmax
-        for (int j = 0, k=grid.size.nz*(grid.size.ny-2); j < grid.size.nz; j++,k++) {
+        for (int j = 0, k=grid.size.nz*(grid.size.ny-1); j < grid.size.nz; j++,k++) {
             //pared Y_0
             block_index = j + i * grid.size.nz * grid.size.ny;
             for (int l = 0; l < grid.blocks[block_index].size(); l++) {
@@ -508,7 +507,7 @@ void Z_boundary_interaction(std::vector<Particle> &particles, Grid &grid) {
 
 
     double distance_z;
-    for (int i = 0,j =grid.size.nz-2; i < grid.size.nz*grid.size.ny*grid.size.nx; i+=grid.size.nz, j+=grid.size.nz){     //the number of particles in the x axix is ny * nz twice x min and xmax
+    for (int i = 0,j =grid.size.nz-1; i < grid.size.nz*grid.size.ny*grid.size.nx; i+=grid.size.nz, j+=grid.size.nz){     //the number of particles in the x axix is ny * nz twice x min and xmax
         //pared Z_0
         for (int l = 0; l < grid.blocks[i].size(); l++) {
             distance_z = particles[l].py - bmin[2];
@@ -580,6 +579,7 @@ void simulate(int nsteps, std::vector<Particle> &particles, Grid &grid){
     for(int i=0;i < nsteps; i++) {
         vector<double> densities;
         vector<Acceleration> accelerations;
+
         //Stages of Simulation
         //Stage 2: Accelerations computation
         accelerations_computation(particles, grid, densities, accelerations);
@@ -656,7 +656,7 @@ int main(int argc, char** argv) {
     Grid grid = grid_initialization(initialValues,myparticles);
 
 
-   cout<<"grid.blocks.size() = "<<grid.blocks.size()<<'\n';
+    cout<<"grid.blocks.size() = "<<grid.blocks.size()<<'\n';
     int saved_particles = 0;
     for (int i = 0; i< grid.blocks.size();i++) {
 
@@ -668,10 +668,11 @@ int main(int argc, char** argv) {
         for (int x = 0; x < grid.blocks[i].size(); x++) {
             cout << grid.blocks[i][x] << ' ';
         }
-
     }
 
-    cout<<'\n'<<"saved_particles = "<<saved_particles<<'\n';
+    cout<<'\n'<<"saved_particles = "<<saved_particles;
+    cout<<"nx  = "<< grid.size.nx<<"    ny  = "<< grid.size.ny<<"     nz  = "<< grid.size.nz <<'\n';
+
 
     simulate(1,myparticles,grid);
     write_to_file(argv[3],myparticles,initialValues);
