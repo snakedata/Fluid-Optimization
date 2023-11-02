@@ -68,8 +68,8 @@ double time_step = 0.001;
 int particle_num = 2;
 double g = 9.8;
 //std::string address = "../new.fld";
-vector<double> bmax = {0.08, 0.1, 0.08};
-vector<double> bmin = {-0.08, -0.09, -0.08};
+vector<double> bmax = {0.065, 0.1, 0.065};
+vector<double> bmin = {-0.065, -0.08, -0.065};
 double h;
 double m;
 
@@ -93,6 +93,153 @@ int particles_statistics(vector<vector <Particle>> &grid){
     average = average/block_number;
     cout << "\nThe average number of particles is: " << average << "\nThe maximum is: " << maximum << "\n The minimum is: " << minimum;
 }*/
+
+
+
+///Functions for trace debug ----- $$$$$$$$$$$$$$$$$$$$$$$$$$
+
+void compare_particle(Particle &p1, Particle &p2,long id){
+    if (p1.px != p2.px){
+        cout<<"id = "<<id<<" "<<"Particles x pos differ, p1.px = "<<p1.px<<" p2.px = "<<p2.px<<'\n';
+        exit(-1);
+    }
+    if (p1.py != p2.py){
+        cout<<"id = "<<id<<" "<<"Particles y pos differ, p1.py = "<<p1.py<<" p2.py = "<<p2.py<<'\n';
+        exit(-1);
+    }
+    if (p1.pz != p2.pz){
+        cout<<"id = "<<id<<" "<<"Particles z pos differ, p1.pz = "<<p1.pz<<" p2.pz = "<<p2.pz<<'\n';
+        exit(-1);
+    }
+    if (p1.hvx != p2.hvx){
+        cout<<"id = "<<id<<" "<<"Particles hvx pos differ, p1.hvx = "<<p1.hvx<<" p2.hvx = "<<p2.hvx<<'\n';
+        exit(-1);
+    }
+    if (p1.hvy != p2.hvy){
+        cout<<"id = "<<id<<" "<<"Particles hvy pos differ, p1.hvy = "<<p1.hvy<<" p2.hvy = "<<p2.hvy<<'\n';
+        exit(-1);
+    }
+    if (p1.hvz != p2.hvz){
+        cout<<"id = "<<id<<" "<<"Particles hvz pos differ, p1.hvz = "<<p1.hvz<<" p2.hvz = "<<p2.hvz<<'\n';
+        exit(-1);
+    }
+    if (p1.vx != p2.vx){
+        cout<<"id = "<<id<<" "<<"Particles vx pos differ, p1.vx = "<<p1.vx<<" p2.vx = "<<p2.vx<<'\n';
+        exit(-1);
+    }
+    if (p1.vy != p2.vy){
+        cout<<"id = "<<id<<" "<<"Particles vy pos differ, p1.vy = "<<p1.vy<<" p2.vy = "<<p2.vy<<'\n';
+        exit(-1);
+    }
+    if (p1.vz != p2.vz){
+        cout<<"id = "<<id<<" "<<"Particles vz pos differ, p1.vz = "<<p1.vz<<" p2.vz = "<<p2.vz<<'\n';
+        exit(-1);
+    }
+
+}
+
+void compare_accelerations(Acceleration &a1, Acceleration &a2, long id){
+    if (a1.ax!=a2.ax){
+        cout<<"id = "<<id<<" "<<"Accelerations ax differ, a1.ax = "<<a1.ax<<" a2.ax = "<<a2.ax<<'\n';
+        exit(-1);
+    }
+    if (a1.ay!=a2.ay){
+        cout<<"id = "<<id<<" "<<"Accelerations ay differ, a1.ay = "<<a1.ay<<" a2.ay = "<<a2.ay<<'\n';
+        exit(-1);
+    }
+    if (a1.az!=a2.az){
+        cout<<"id = "<<id<<" "<<"Accelerations az differ, a1.az = "<<a1.az<<" a2.az = "<<a2.az<<'\n';
+        exit(-1);
+    }
+}
+
+void find_elem(int e, std::vector<int> &v){
+    ///Only works if both vectors have same size
+    int found = 0;
+    for (int i = 0; i<v.size();i++){
+        if(e == v[i]){
+            found = 1;
+        }
+    }
+    if (found==0){
+        cout<<"Id "<<e<<" not found in grid block\n";
+        exit(-1);
+    }
+}
+
+void check_trace(string trz, Grid &grid, vector<Particle> &particles, vector<double> &densities, vector<Acceleration> &accelerations){
+    ifstream file(trz, ios::binary);
+    if (!file.is_open()) { //Check error opening
+        cout<<"Error: Cannot open trace file: " << trz <<" for reading";
+        exit (-1);
+    }
+
+    int num_blocks;
+    file.read(reinterpret_cast<char*>(&num_blocks), sizeof(int));
+
+    if (num_blocks != grid.blocks.size()){
+        cout<<"Number of blocks differ from trace:\n"<<"trz_blocks = "<<num_blocks<<'\t'<<"grid_blocks = "<<grid.blocks.size()<<'\n';
+        //cout<<"Pruebita"<<(grid.size.nx-1)*(grid.size.ny-1)*(grid.size.nz-1)<<'\n';
+        exit(-1);
+    }
+
+    long particles_in_block;
+    long id;
+    Particle part;
+    double d;
+    Acceleration a;
+
+    for (int i = 0; i < num_blocks;i++){
+        file.read(reinterpret_cast<char*>(&particles_in_block), sizeof(long));
+        cout<<"Entering block: "<<i<<" particles in block = "<<particles_in_block<<'\n';
+
+        if(grid.blocks[i].size()!=particles_in_block){
+            cout<<"Number of particles for block "<<i<<" mismatch: "<<"grid.blocks["<<i<<"].size() = "<<grid.blocks[i].size()<<" particles in block = "<<particles_in_block<<'\n';
+            exit(-1);
+        }
+
+        for (int p = 0; p<particles_in_block;p++){
+            file.read(reinterpret_cast<char*>(&id), sizeof(long));
+            find_elem(id,grid.blocks[i]);
+            file.read(reinterpret_cast<char*>(&part.px), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.py), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.pz), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.hvx), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.hvy), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.hvz), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.vx), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.vy), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.vz), sizeof(double));
+            file.read(reinterpret_cast<char*>(&d), sizeof(double));
+            file.read(reinterpret_cast<char*>(&a.ax), sizeof(double));
+            file.read(reinterpret_cast<char*>(&a.ay), sizeof(double));
+            file.read(reinterpret_cast<char*>(&a.az), sizeof(double));
+
+
+            compare_particle(particles[id],part,id);
+
+            if (densities[id]!=d){
+                cout<<"Densities for particle "<<id<<" differ, d = "<<d<<" densities["<<id<<"] = "<<densities[id]<<'\n';
+                exit(-1);
+            }
+
+            compare_accelerations(accelerations[id],a,id);
+
+        }
+    }
+
+
+
+    file.close();
+}
+
+
+
+///------------------------
+///-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+
 
 double distance_squared(Particle p1, Particle p2){
     double dx = p1.px - p2.px;
@@ -371,7 +518,9 @@ void accelerations_computation(std::vector<Particle> &particles, Grid &grid,std:
         accelerations.push_back(a);
     }
 
+    //check_trace("../trz/small/densinc-base-1.trz",grid,particles,densities,accelerations);
     densities_increase(particles,grid,densities);
+    check_trace("../trz/small/densinc-base-1.trz",grid,particles,densities,accelerations);
     densities_transform(densities);
     acceleration_transfer(particles,grid,densities,accelerations);
 
@@ -575,24 +724,8 @@ void particles_motion(std::vector<Particle> &particles, Grid &grid, std::vector 
 
     }
 }
-void simulate(int nsteps, std::vector<Particle> &particles, Grid &grid){
-    for(int i=0;i < nsteps; i++) {
-        vector<double> densities;
-        vector<Acceleration> accelerations;
 
-        //Stages of Simulation
-        //Stage 2: Accelerations computation
-        accelerations_computation(particles, grid, densities, accelerations);
-        //Stage 3: Particle Collisions
-        particle_collision(particles,grid,accelerations);
-        //stage 4: Particles motion
-        particles_motion(particles, grid, accelerations);
-        //Stage 5: Boundary collisions
-        boundary_collision(particles,grid);
-    }
-}
-
-Grid grid_initialization(Initial_values initialValues,vector<Particle> &particles){
+Grid grid_initialization(Initial_values &initialValues,vector<Particle> &particles){
     double boxx = bmax[0] - bmin[0];
     double boxy = bmax[1] - bmin[1];
     double boxz = bmax[2] - bmin[2];
@@ -627,6 +760,23 @@ Grid grid_initialization(Initial_values initialValues,vector<Particle> &particle
 
 
 
+void simulate(int nsteps, std::vector<Particle> &particles, Grid &grid){
+    for(int i=0;i < nsteps; i++) {
+        vector<double> densities;
+        vector<Acceleration> accelerations;
+
+        //Stages of Simulation
+        //Stage 2: Accelerations computation
+        accelerations_computation(particles, grid, densities, accelerations);
+        //check_trace("../trz/small/densinc-base-1.trz",grid,particles,densities,accelerations);
+        //Stage 3: Particle Collisions
+        particle_collision(particles,grid,accelerations);
+        //stage 4: Particles motion
+        particles_motion(particles, grid, accelerations);
+        //Stage 5: Boundary collisions
+        boundary_collision(particles,grid);
+    }
+}
 
 
 int main(int argc, char** argv) {
@@ -676,5 +826,6 @@ int main(int argc, char** argv) {
 
     simulate(1,myparticles,grid);
     write_to_file(argv[3],myparticles,initialValues);
+
     return 0;
 }
