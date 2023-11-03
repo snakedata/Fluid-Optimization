@@ -1,0 +1,469 @@
+#include <iostream>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cmath>
+#include <vector>
+
+using namespace std;
+
+struct Particle{
+    double px;
+    double py;
+    double pz;
+    double hvx;
+    double hvy;
+    double hvz;
+    double vx;
+    double vy;
+    double vz;
+};
+//Structure for initially read variables ppm,np,m,h
+struct Initial_values{
+    float ppm;
+    int np;
+    double m;
+    double h;
+};
+
+struct GridSize{ /// Struct to store grid size, used later to ease arguments passing in fucntions
+    int nx;
+    int ny;
+    int nz;
+    double sx;
+    double sy;
+    double sz;
+};
+
+struct Grid{
+    GridSize size;
+    std::vector<std::vector<int>> blocks;
+};
+
+struct Acceleration{
+    double ax;
+    double ay;
+    double az;
+};
+
+//Global Variables //porque está los componentes de una partícula como variables globales??!
+float px;
+float py;
+float pz;
+float hvx;
+float hvy;
+float hvz;
+float vx;
+float vy;
+float vz;
+//Constants initialization
+double r = 1.695;
+double p = 1000;
+double ps = 3.0;
+double sc = 30000;   //stiffness collision
+double dv = 128.0;
+double nu = 0.4;
+double dp = 0.0002; //Particle Size
+double time_step = 0.001;
+int particle_num = 2;
+double g = 9.8;
+//std::string address = "../new.fld";
+vector<double> bmax = {0.08, 0.1, 0.08};
+vector<double> bmin = {-0.08, -0.09, -0.08};
+double h;
+double m;
+
+Initial_values read_general_info(ifstream &file){
+    // Read ppm and np
+    //cap 10-11
+    Initial_values initialValues;
+    file.read(reinterpret_cast<char*>(&initialValues.ppm), sizeof(float));
+    file.read(reinterpret_cast<char*>(&initialValues.np), sizeof(int));
+    initialValues.ppm = static_cast<float>(initialValues.ppm); ///Esto no debería ser double en vez de float??????
+    initialValues.m = p*pow(initialValues.ppm,3);
+    initialValues.h = r/initialValues.ppm;
+    std::cout << "ppm: " << initialValues.ppm << ", np: " << initialValues.np << std::endl;
+    return initialValues;
+}
+
+int read_particle_info(ifstream &file,vector<Particle> &particles){
+    int counter = 0;
+    //file.read(reinterpret_cast<char*)
+    while(file.peek()!=EOF){
+        counter ++;
+        Particle particle;
+        file.read(reinterpret_cast<char*>(&px), sizeof(float));
+        file.read(reinterpret_cast<char*>(&py), sizeof(float));
+        file.read(reinterpret_cast<char*>(&pz), sizeof(float));
+        file.read(reinterpret_cast<char*>(&hvx), sizeof(float));
+        file.read(reinterpret_cast<char*>(&hvy), sizeof(float));
+        file.read(reinterpret_cast<char*>(&hvz), sizeof(float));
+        file.read(reinterpret_cast<char*>(&vx), sizeof(float));
+        file.read(reinterpret_cast<char*>(&vy), sizeof(float));
+        file.read(reinterpret_cast<char*>(&vz), sizeof(float));
+        particle.px = static_cast<double>(px);
+        //cout<<"\nJoder "<<particle.px<<"\n";
+        particle.py = static_cast<double>(py);
+        particle.pz = static_cast<double>(pz);
+        particle.hvx = static_cast<double>(hvx);
+        particle.hvy = static_cast<double>(hvy);
+        particle.hvz = static_cast<double>(hvz);
+        particle.vx = static_cast<double>(vx);
+        particle.vy = static_cast<double>(vy);
+        particle.vz = static_cast<double>(vz);
+        particles.push_back(particle);
+    }
+    return counter;}
+
+vector<Particle> initial_read(std::string file_address,Initial_values &initialValues){
+    //Read file
+    ifstream file(file_address, ios::binary);
+    if (!file.is_open()) { //Check error opening
+        cout<<"Error: Cannot open " << file_address <<" for reading";
+        exit (-3);
+    }
+    std::vector<Particle> particles; //Iniatilize a vector of particles to be stored
+    int counter = read_particle_info(file,particles);
+    if(counter == 0){
+        cout<< "Error : Invalid number of particles: " << counter <<".";
+    }
+    else if(counter != initialValues.np){
+        cout<<"Error : NDiabloumber of particles mismatch. Header " << initialValues.np << " Found " << counter <<".";
+    }
+    file.close();
+    return particles;
+}
+
+void compare_particle(Particle &p1, Particle &p2,long id){
+    if (p1.px != p2.px){
+        cout<<"id = "<<id<<" "<<"Particles x pos differ, p1.px = "<<p1.px<<" p2.px = "<<p2.px<<'\n';
+        exit(-1);
+    }
+    if (p1.py != p2.py){
+        cout<<"id = "<<id<<" "<<"Particles y pos differ, p1.py = "<<p1.py<<" p2.py = "<<p2.py<<'\n';
+        exit(-1);
+    }
+    if (p1.pz != p2.pz){
+        cout<<"id = "<<id<<" "<<"Particles z pos differ, p1.pz = "<<p1.pz<<" p2.pz = "<<p2.pz<<'\n';
+        exit(-1);
+    }
+    if (p1.hvx != p2.hvx){
+        cout<<"id = "<<id<<" "<<"Particles hvx pos differ, p1.hvx = "<<p1.hvx<<" p2.hvx = "<<p2.hvx<<'\n';
+        exit(-1);
+    }
+    if (p1.hvy != p2.hvy){
+        cout<<"id = "<<id<<" "<<"Particles hvy pos differ, p1.hvy = "<<p1.hvy<<" p2.hvy = "<<p2.hvy<<'\n';
+        exit(-1);
+    }
+    if (p1.hvz != p2.hvz){
+        cout<<"id = "<<id<<" "<<"Particles hvz pos differ, p1.hvz = "<<p1.hvz<<" p2.hvz = "<<p2.hvz<<'\n';
+        exit(-1);
+    }
+    if (p1.vx != p2.vx){
+        cout<<"id = "<<id<<" "<<"Particles vx pos differ, p1.vx = "<<p1.vx<<" p2.vx = "<<p2.vx<<'\n';
+        exit(-1);
+    }
+    if (p1.vy != p2.vy){
+        cout<<"id = "<<id<<" "<<"Particles vy pos differ, p1.vy = "<<p1.vy<<" p2.vy = "<<p2.vy<<'\n';
+        exit(-1);
+    }
+    if (p1.vz != p2.vz){
+        cout<<"id = "<<id<<" "<<"Particles vz pos differ, p1.vz = "<<p1.vz<<" p2.vz = "<<p2.vz<<'\n';
+        exit(-1);
+    }
+
+}
+
+void compare_accelerations(Acceleration &a1, Acceleration &a2, long id){
+    if (a1.ax!=a2.ax){
+        cout<<"id = "<<id<<" "<<"Accelerations ax differ, a1.ax = "<<a1.ax<<" a2.ax = "<<a2.ax<<'\n';
+        exit(-1);
+    }
+    if (a1.ay!=a2.ay){
+        cout<<"id = "<<id<<" "<<"Accelerations ay differ, a1.ay = "<<a1.ay<<" a2.ay = "<<a2.ay<<'\n';
+        exit(-1);
+    }
+    if (a1.az!=a2.az){
+        cout<<"id = "<<id<<" "<<"Accelerations az differ, a1.az = "<<a1.az<<" a2.az = "<<a2.az<<'\n';
+        exit(-1);
+    }
+}
+
+void find_elem(int e, std::vector<int> &v){
+    ///Only works if both vectors have same size
+    int found = 0;
+    for (int i = 0; i<v.size();i++){
+        if(e == v[i]){
+            found = 1;
+        }
+    }
+    if (found==0){
+        cout<<"Id "<<e<<" not found in grid block\n";
+        exit(-1);
+    }
+}
+
+void check_trace(string trz, Grid &grid, vector<Particle> &particles, vector<double> &densities, vector<Acceleration> &accelerations){
+    ifstream file(trz, ios::binary);
+    if (!file.is_open()) { //Check error opening
+        cout<<"Error: Cannot open trace file: " << trz <<" for reading";
+        exit (-1);
+    }
+
+    int num_blocks;
+    file.read(reinterpret_cast<char*>(&num_blocks), sizeof(int));
+    cout<<"\n"<<num_blocks<<"\n";
+    if (num_blocks != grid.blocks.size()){
+        cout<<"Number of blocks differ from trace:\n"<<"trz_blocks = "<<num_blocks<<'\t'<<"grid_blocks = "<<grid.blocks.size()<<'\n';
+        //cout<<"Pruebita"<<(grid.size.nx-1)*(grid.size.ny-1)*(grid.size.nz-1)<<'\n';
+        exit(-1);
+    }
+
+    long particles_in_block;
+    long id;
+    Particle part;
+    double d;
+    Acceleration a;
+
+    for (int i = 0; i < num_blocks;i++){
+        file.read(reinterpret_cast<char*>(&particles_in_block), sizeof(long));
+        cout<<"Entering block: "<<i<<" particles in block = "<<particles_in_block<<'\n';
+
+        if(grid.blocks[i].size()!=particles_in_block){
+            cout<<"Number of particles for block "<<i<<" mismatch: "<<"grid.blocks["<<i<<"].size() = "<<grid.blocks[i].size()<<" particles in block = "<<particles_in_block<<'\n';
+            exit(-1);
+        }
+
+        for (int p = 0; p<particles_in_block;p++){
+            file.read(reinterpret_cast<char*>(&id), sizeof(long));
+            find_elem(id,grid.blocks[i]);
+            file.read(reinterpret_cast<char*>(&part.px), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.py), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.pz), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.hvx), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.hvy), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.hvz), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.vx), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.vy), sizeof(double));
+            file.read(reinterpret_cast<char*>(&part.vz), sizeof(double));
+            file.read(reinterpret_cast<char*>(&d), sizeof(double));
+            file.read(reinterpret_cast<char*>(&a.ax), sizeof(double));
+            file.read(reinterpret_cast<char*>(&a.ay), sizeof(double));
+            file.read(reinterpret_cast<char*>(&a.az), sizeof(double));
+
+
+            compare_particle(particles[id],part,id);
+
+            if (densities[id]!=d){
+                cout<<"Densities for particle "<<id<<" differ, d = "<<d<<" densities["<<id<<"] = "<<densities[id]<<'\n';
+                exit(-1);
+            }
+
+            //compare_accelerations(accelerations[id],a,id);
+
+        }
+    }
+
+
+
+    file.close();
+}
+vector <Particle> receive_trace(string trz, vector<double> &densities, vector<Acceleration> &accelerations) {
+    ifstream file(trz, ios::binary);
+    if (!file.is_open()) { //Check error opening
+        cout << "Error: Cannot open trace file: " << trz << " for reading";
+        exit(-1);
+    }
+
+    int num_blocks;
+    Grid grid;
+    vector <Particle> particles;
+    file.read(reinterpret_cast<char *>(&num_blocks), sizeof(int));
+    long particles_in_block;
+    long id;
+    Particle part;
+    double d;
+    Acceleration a;
+    cout<<"\n"<<num_blocks<<"\n";
+    for (int i = 0; i < num_blocks; i++) {
+        file.read(reinterpret_cast<char *>(&particles_in_block), sizeof(long));
+        cout << "Entering block: " << i << " particles in block = " << particles_in_block << '\n';
+
+        for (int p = 0; p < particles_in_block; p++) {
+            file.read(reinterpret_cast<char *>(&id), sizeof(long));
+            file.read(reinterpret_cast<char *>(&part.px), sizeof(double));
+            file.read(reinterpret_cast<char *>(&part.py), sizeof(double));
+            file.read(reinterpret_cast<char *>(&part.pz), sizeof(double));
+            file.read(reinterpret_cast<char *>(&part.hvx), sizeof(double));
+            file.read(reinterpret_cast<char *>(&part.hvy), sizeof(double));
+            file.read(reinterpret_cast<char *>(&part.hvz), sizeof(double));
+            file.read(reinterpret_cast<char *>(&part.vx), sizeof(double));
+            file.read(reinterpret_cast<char *>(&part.vy), sizeof(double));
+            file.read(reinterpret_cast<char *>(&part.vz), sizeof(double));
+            file.read(reinterpret_cast<char *>(&d), sizeof(double));
+            file.read(reinterpret_cast<char *>(&a.ax), sizeof(double));
+            file.read(reinterpret_cast<char *>(&a.ay), sizeof(double));
+            file.read(reinterpret_cast<char *>(&a.az), sizeof(double));
+            accelerations.push_back(a);
+            densities.push_back(d);
+            particles.push_back(part);
+        }
+    }
+    return particles;
+}
+
+void write_to_file(std::string output_file_address,std::vector<Particle> particles, Initial_values &initialValues){
+    //Write to the file all the new values
+    ofstream output_file(output_file_address, ios::binary);
+    if (!output_file.is_open()) { //Check error opening
+        cout<<"Error: Cannot open " << output_file_address <<" for writing";
+        exit (-3);
+    }
+
+    output_file.write(reinterpret_cast<char*>(&initialValues.ppm), sizeof(float));
+    output_file.write(reinterpret_cast<char*>(&initialValues.np), sizeof(int));
+    //cout<<"\n"<<initialValues.ppm<<"HOLA"<<initialValues.np<<"\n";
+    for (int i = 0; i < particles.size(); i++){
+        px = static_cast<float>(particles[i].px);
+        py = static_cast<float>(particles[i].py);
+        pz = static_cast<float>(particles[i].pz);
+        hvx = static_cast<float>(particles[i].hvx);
+        hvy = static_cast<float>(particles[i].hvy);
+        hvz = static_cast<float>(particles[i].hvz);
+        vx = static_cast<float>(particles[i].vx);
+        vy = static_cast<float>(particles[i].vy);
+        vz = static_cast<float>(particles[i].vz);
+        output_file.write(reinterpret_cast<const char*>(&px), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&py), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&pz), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&hvx), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&hvy), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&hvz), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&vx), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&vy), sizeof(float));
+        output_file.write(reinterpret_cast<const char*>(&vz), sizeof(float));
+        //output_file.write("\n", sizeof(char ));
+        cout<<"\n"<<particles[i].px<<"\n";
+    }
+    output_file.close();
+}
+vector <vector<int>> gridCreation(vector<Particle> &particles,GridSize gridSize){
+    vector<vector<int>> blocks;
+    for (int x = 0; x < (gridSize.nx)*(gridSize.ny)*(gridSize.nz); x++){
+        vector <int> new_vector;
+        blocks.push_back(new_vector);
+    }
+    //cout<<"Before : "<< blocks.size()<<'\n';
+    return blocks;
+}
+int find_block(Particle particle,GridSize gridSize){
+    int block_x = floor((particle.px - bmin[0])/gridSize.sx);
+    int block_y = floor((particle.py - bmin[1])/gridSize.sy);
+    int block_z = floor((particle.pz - bmin[2])/gridSize.sz);
+    if (block_x < 0){
+        block_x = 0;
+    } else if (block_x >= gridSize.nx) {
+        block_x = gridSize.nx-1;
+    }if (block_y < 0){
+        block_y = 0;
+    } else if (block_y >= gridSize.ny) {
+        block_y = gridSize.ny-1;
+    }if (block_z < 0){
+        block_z = 0;
+    } else if (block_z >= gridSize.nz) {
+        block_z = gridSize.nz-1;
+    }
+    //cout << "This is the x block " << block_x << ", y block " << block_y << ", z block " << block_z;
+    int num_block = block_z + block_y*gridSize.nz + block_x*gridSize.nz*gridSize.ny;
+    return num_block;
+}
+Grid grid_initialization(Initial_values initialValues,vector<Particle> &particles){
+    double boxx = bmax[0] - bmin[0];
+    double boxy = bmax[1] - bmin[1];
+    double boxz = bmax[2] - bmin[2];
+    GridSize gridSize;
+    gridSize.nx = floor(boxx/initialValues.h);
+    gridSize.ny = floor(boxy/initialValues.h);
+    gridSize.nz = floor(boxz/initialValues.h);
+
+    //cout << "\n r: " << r << " ppm: " << ppm;
+
+    gridSize.sx = boxx/gridSize.nx;
+    gridSize.sy = boxy/gridSize.ny;
+    gridSize.sz = boxz/gridSize.nz;
+    std::vector<vector <int>> blocks = gridCreation(particles,gridSize);
+    Grid grid;
+    grid.size = gridSize;
+    grid.blocks = blocks;
+    //cout<<"After : "<<grid.blocks.size()<<'\n';
+
+    for (int i = 0; i < particles.size(); i++){
+        int index = find_block(particles[i],grid.size);
+        //cout<<i<<' ';
+        grid.blocks[index].push_back(i);
+
+    }
+
+    return grid;
+}
+void particles_motion(std::vector<Particle> &particles, Grid &grid, std::vector <Acceleration> &accelerations){
+    for (int i = 0; i < particles.size(); i++){
+
+        double move_x = particles[i].hvx*time_step + accelerations[i].ax*pow(time_step,2);
+        double move_y = particles[i].hvy*time_step + accelerations[i].ay*pow(time_step,2);
+        double move_z = particles[i].hvz*time_step + accelerations[i].az*pow(time_step,2);
+
+        int old_block = find_block(particles[i],grid.size);
+
+        particles[i].px += move_x;
+        particles[i].py += move_y;
+        particles[i].pz += move_z;
+        particles[i].vx = particles[i].hvx + (accelerations[i].ax*time_step)/2;
+        particles[i].vy = particles[i].hvy + (accelerations[i].ay*time_step)/2;
+        particles[i].vz = particles[i].hvz + (accelerations[i].az*time_step)/2;
+        particles[i].hvx = particles[i].hvx + accelerations[i].ax*time_step;
+        particles[i].hvy = particles[i].hvy + accelerations[i].ay*time_step;
+        particles[i].hvz = particles[i].hvz + accelerations[i].az*time_step;
+
+        int new_block = find_block(particles[i],grid.size);
+
+        if (old_block!=new_block){
+            grid.blocks[new_block].push_back(i);
+
+            auto x = grid.blocks[old_block].begin();
+            while ( *x != i){x++;}
+
+            grid.blocks[old_block].erase(x);
+
+        }
+
+    }
+}
+void simulate(int nsteps, std::vector<Particle> &particles, Grid &grid){
+    for(int i=0;i < nsteps; i++) {
+        vector<double> densities;
+        vector<Acceleration> accelerations;
+        //Stages of Simulation
+        //Stage 2: Accelerations computation
+        //accelerations_computation(particles, grid, densities, accelerations);
+        //Stage 3: Particle Collisions
+        //particle_collision(particles,grid,accelerations);
+        //stage 4: Particles motion
+        particles_motion(particles, grid, accelerations);
+        //Stage 5: Boundary collisions
+        //boundary_collision(particles,grid);
+    }
+}
+int main(int argc, char** argv) {
+    ifstream file1(argv[2], ios :: binary);
+    Initial_values initialValues = read_general_info(file1);
+    //std::vector<Particle> myparticles = initial_read(argv[2],initialValues);
+    vector <Acceleration> accelerations;
+    vector <double> densities;
+    vector <Particle> particles = receive_trace(argv[4],densities,accelerations);
+    Grid grid = grid_initialization(initialValues,particles);
+    particles_motion(particles, grid, accelerations);
+    check_trace(argv[5],grid,particles,densities,accelerations);
+    cout<<"Thi is the end";
+    return 0;
+}
