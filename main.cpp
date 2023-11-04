@@ -229,10 +229,61 @@ void check_trace(string trz, Grid &grid, vector<Particle> &particles, vector<dou
     }
 
 
+    cout<<"\nTrace is equal to current state of the simulation\n";
 
     file.close();
 }
 
+void load_trace(string trz, Grid &grid, vector<Particle> &particles, vector<double> &densities, vector<Acceleration> &accelerations, Initial_values &i_v){
+    ifstream file(trz, ios::binary);
+    if (!file.is_open()) { //Check error opening
+        cout<<"Error: Cannot open trace file: " << trz <<" for reading";
+        exit (-1);
+    }
+
+    int num_blocks;
+    file.read(reinterpret_cast<char*>(&num_blocks), sizeof(int));
+
+    std::vector<std::vector<int>> blocks(num_blocks);
+    grid.blocks = blocks;
+
+    particles = std::vector<Particle> (i_v.np);
+    densities = std::vector<double> (i_v.np);
+    accelerations = std::vector<Acceleration> (i_v.np);
+
+    long particles_in_block;
+    long id;
+    Particle part;
+    double d;
+    Acceleration a;
+
+    cout<<"Grid.size = "<<grid.blocks.size()<<" total particles = "<<particles.size()<<'\n';
+
+    for (int i = 0; i<num_blocks;i++){
+        file.read(reinterpret_cast<char*>(&particles_in_block), sizeof(long));
+        //cout<<"Loading block: "<<i<<" particles in block = "<<particles_in_block<<'\n';
+
+        for (int p = 0; p<particles_in_block;p++){
+            file.read(reinterpret_cast<char*>(&id), sizeof(long));
+            grid.blocks[i].push_back(id);
+            file.read(reinterpret_cast<char*>(&particles[id].px), sizeof(double));
+            file.read(reinterpret_cast<char*>(&particles[id].py), sizeof(double));
+            file.read(reinterpret_cast<char*>(&particles[id].pz), sizeof(double));
+            file.read(reinterpret_cast<char*>(&particles[id].hvx), sizeof(double));
+            file.read(reinterpret_cast<char*>(&particles[id].hvy), sizeof(double));
+            file.read(reinterpret_cast<char*>(&particles[id].hvz), sizeof(double));
+            file.read(reinterpret_cast<char*>(&particles[id].vx), sizeof(double));
+            file.read(reinterpret_cast<char*>(&particles[id].vy), sizeof(double));
+            file.read(reinterpret_cast<char*>(&particles[id].vz), sizeof(double));
+            file.read(reinterpret_cast<char*>(&densities[id]), sizeof(double));
+            file.read(reinterpret_cast<char*>(&accelerations[id].ax), sizeof(double));
+            file.read(reinterpret_cast<char*>(&accelerations[id].ay), sizeof(double));
+            file.read(reinterpret_cast<char*>(&accelerations[id].az), sizeof(double));
+        }
+    }
+
+    cout<<"\nTrace loaded\n";
+}
 
 
 ///------------------------
@@ -823,8 +874,12 @@ int main(int argc, char** argv) {
     cout<<'\n'<<"saved_particles = "<<saved_particles;
     cout<<"nx  = "<< grid.size.nx<<"    ny  = "<< grid.size.ny<<"     nz  = "<< grid.size.nz <<'\n';
 
-
-    simulate(1,myparticles,grid);
+    cout<<"\n\n\n Nuevooooo.... \n\n\n";
+    std::vector<double> densities;
+    std::vector<Acceleration> accelerations;
+    load_trace("../trz/small/densinc-base-1.trz",grid,myparticles,densities,accelerations,initialValues);
+    check_trace("../trz/small/densinc-base-1.trz",grid,myparticles,densities,accelerations);
+    //simulate(1,myparticles,grid);
     write_to_file(argv[3],myparticles,initialValues);
 
     return 0;
