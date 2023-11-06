@@ -578,12 +578,13 @@ void accelerations_computation(std::vector<Particle> &particles, Grid &grid,std:
 }
 void particle_collision_with_X_axis(std::vector<Particle> &particles,  Grid &grid, std::vector <Acceleration> &accelerations) {
 
+    double x_param =0;
     double increment =0;
     //pared x_0
     for (int i = 0; i < grid.size.nz*grid.size.ny; i++){                        //the number of particles in the x axix is ny * nz twice x min and xmax
         for (int j = 0; j < grid.blocks[i].size();j++) {
-
-            increment = dp-(particles[j].px-bmin[0]);                                                    //dp − (x − xmin)
+            x_param = particles[j].px + particles[j].hvx * time_step;                                      //x = px + hvx · ∆t
+            increment = dp-(x_param-bmin[0]);                                                              //dp − (x − xmin)
             if(increment> pow(10,-10))
                 accelerations[j].ax = accelerations[j].ax + (sc * increment - dv * particles[j].vx);       //  ax + (cs · ∆x − dv · vx)
 
@@ -592,7 +593,8 @@ void particle_collision_with_X_axis(std::vector<Particle> &particles,  Grid &gri
     //pared x_max
     for (int i = (grid.size.nz*grid.size.ny*grid.size.nx - grid.size.nz*grid.size.ny)-1; i < grid.size.nz*grid.size.ny*grid.size.nx; i++){
         for (int j = 0; j < grid.blocks[i].size();j++) {
-            increment = dp-(bmax[0]-particles[j].px);                                                    //dp − (xmax − x)
+            x_param = particles[j].px + particles[j].hvx * time_step;                                      //x = px + hvx · ∆t
+            increment = dp-(bmax[0]-x_param);                                                              //dp − (xmax − x)
             if(increment> pow(10,-10))
                 accelerations[j].ax = accelerations[j].ax - (sc * increment + dv * particles[j].vx);       //ax − (cs · ∆x + dv · vx)
 
@@ -602,6 +604,7 @@ void particle_collision_with_X_axis(std::vector<Particle> &particles,  Grid &gri
 
 void particle_collision_with_Y_axis(std::vector<Particle> &particles , Grid &grid, std::vector <Acceleration> &accelerations) {
 
+    double y_param =0;
     double increment =0;
     int block_index=0;
     for (int i = 0; i < grid.size.nx; i++){     //the number of particles in the x axix is ny * nz twice x min and xmax
@@ -609,16 +612,22 @@ void particle_collision_with_Y_axis(std::vector<Particle> &particles , Grid &gri
             //pared Y_0
             block_index = j + i * grid.size.nz * grid.size.ny;
             for (int l = 0; l < grid.blocks[block_index].size(); l++) {
-                increment =dp - (particles[l].py - bmin[1]);                                                        //dp − (y − ymin)
+                y_param = particles[j].py +
+                          particles[j].hvy * time_step;                                     //y = py + hvy · ∆t
+                increment = dp - (y_param -
+                                  bmin[1]);                                                         //dp − (y − ymin)
                 if (increment > pow(10, -10))
-                    accelerations[l].ay = accelerations[l].ay + (sc * increment - dv * particles[l].vy);            //ay + (sc · ∆y − dv · vy)
+                    accelerations[l].ay = accelerations[l].ay +
+                                          (sc * increment - dv * particles[l].vy);      //ay + (sc · ∆y − dv · vy)
+
             }
-            //pared Y_max
-            block_index = k + i * grid.size.nz * grid.size.ny;
+                //pared Y_max
+                block_index = k + i * grid.size.nz * grid.size.ny;
             for (int l = 0; l < grid.blocks[block_index].size(); l++) {
-                increment =dp - (bmax[1] - particles[l].py);                                                         //dp − (ymay − y) i
+                y_param = particles[l].py + particles[l].hvy * time_step;                                     //y = py + hvy · ∆t
+                increment =dp - (bmax[1] - y_param);                                                          //dp − (ymay − y) i
                 if (increment > pow(10, -10))
-                    accelerations[l].ay = accelerations[l].ay - (sc * increment + dv * particles[l].vy);             //ay − (sc · ∆y + dv · vy)
+                    accelerations[l].ay = accelerations[l].ay - (sc * increment + dv * particles[l].vy);      //ay − (sc · ∆y + dv · vy)
             }
         }
     }
@@ -627,17 +636,19 @@ void particle_collision_with_Y_axis(std::vector<Particle> &particles , Grid &gri
 
 void particle_collision_with_Z_axis(std::vector<Particle> &particles, Grid &grid, std::vector <Acceleration> &accelerations) {
 
-
+    double z_param =0;
     double increment =0;
     for (int i = 0,j =grid.size.nz-1; i < grid.size.nz*grid.size.ny*grid.size.nx; i+=grid.size.nz, j+=grid.size.nz){     //the number of particles in the x axix is ny * nz twice x min and xmax
         //pared Z_0
         for (int l = 0; l < grid.blocks[i].size(); l++) {
-            increment =dp - (particles[l].pz - bmin[2]);                                             //dp − (z − zmin)
+            z_param = particles[l].pz + particles[l].hvz * time_step;                                     //z = pz + hvz · ∆t
+            increment =dp - (z_param - bmin[2]);                                                           //dp − (z − zmin)
             if (increment > pow(10, -10))accelerations[l].ay =accelerations[l].az + (sc * increment - dv * particles[l].vz);  //az + (sc · ∆z − dv · vz)
         }
         //pared Z_max
         for (int l = 0; l < grid.blocks[j].size(); l++) {
-            increment =dp - (bmax[2] - particles[l].pz);                                             //dp − (zmax− z) i
+            z_param = particles[l].pz + particles[l].hvz * time_step;                                //z = pz + hvz · ∆t
+            increment =dp - (bmax[2] - z_param);                                                     //dp − (zmax− z) i
             if (increment > pow(10, -10))
                 accelerations[l].az =accelerations[l].az - (sc * increment + dv * particles[l].vz);  //az − (sc · ∆z + dv · vz)
         }
@@ -819,7 +830,6 @@ void simulate(int nsteps, std::vector<Particle> &particles, Grid &grid){
         //Stages of Simulation
         //Stage 2: Accelerations computation
         accelerations_computation(particles, grid, densities, accelerations);
-        //check_trace("../trz/small/densinc-base-1.trz",grid,particles,densities,accelerations);
         //Stage 3: Particle Collisions
         particle_collision(particles,grid,accelerations);
         //stage 4: Particles motion
@@ -877,8 +887,11 @@ int main(int argc, char** argv) {
     cout<<"\n\n\n Nuevooooo.... \n\n\n";
     std::vector<double> densities;
     std::vector<Acceleration> accelerations;
-    load_trace("../trz/small/densinc-base-1.trz",grid,myparticles,densities,accelerations,initialValues);
-    check_trace("../trz/small/densinc-base-1.trz",grid,myparticles,densities,accelerations);
+    load_trace("../trz/small/acctransf-base-1.trz",grid,myparticles,densities,accelerations,initialValues);
+
+    //check_trace("../trz/small/densinc-base-1.trz",grid,myparticles,densities,accelerations);
+    particle_collision(myparticles,grid,accelerations);
+    check_trace("../trz/small/partcol-base-1.trz",grid,myparticles,densities,accelerations);
     //simulate(1,myparticles,grid);
     write_to_file(argv[3],myparticles,initialValues);
 
