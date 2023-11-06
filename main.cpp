@@ -612,8 +612,8 @@ void particle_collision_with_Y_axis(std::vector<Particle> &particles , Grid &gri
             //pared Y_0
             block_index = j + i * grid.size.nz * grid.size.ny;
             for (int l = 0; l < grid.blocks[block_index].size(); l++) {
-                y_param = particles[j].py +
-                          particles[j].hvy * time_step;                                     //y = py + hvy · ∆t
+                y_param = particles[l].py +
+                          particles[l].hvy * time_step;                                     //y = py + hvy · ∆t
                 increment = dp - (y_param -
                                   bmin[1]);                                                         //dp − (y − ymin)
                 if (increment > pow(10, -10))
