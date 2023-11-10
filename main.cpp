@@ -222,7 +222,7 @@ void check_trace(string trz, Grid &grid, vector<Particle> &particles, vector<dou
             compare_particle(particles[id],part,id);
 
             if (densities[id]!=d){
-                cout<<"Densities for particle "<<id<<" differ, d = "<<d<<" densities["<<id<<"] = "<<densities[id]<<'\n';
+                cout<<"Densities for particle "<<id<<" differ, d = "<<d<<" densities["<<id<<"] = "<<densities[id]<<" ; Difference = "<<d-densities[id]<<'\n';
                 //exit(-1);
             }
 
