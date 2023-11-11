@@ -223,7 +223,7 @@ void check_trace(string trz, Grid &grid, vector<Particle> &particles, vector<dou
 
             if (densities[id]!=d){
                 cout<<"Densities for particle "<<id<<" differ, d = "<<d<<" densities["<<id<<"] = "<<densities[id]<<" ; Difference = "<<d-densities[id]<<'\n';
-                //exit(-1);
+                exit(-1);
             }
 
             compare_accelerations(accelerations[id],a,id);
@@ -300,7 +300,7 @@ double distance_squared(Particle p1, Particle p2){
     double dy = p1.py - p2.py;
     double dz = p1.pz - p2.pz;
 
-    return dx * dx + dy * dy + dz * dz;
+    return pow(dx,2) + pow(dy,2) + pow(dz,2);
 }
 
 //FILE FUNCTIONS
@@ -310,9 +310,9 @@ Initial_values read_general_info(ifstream &file){
     Initial_values initialValues;
     file.read(reinterpret_cast<char*>(&initialValues.ppm), sizeof(float));
     file.read(reinterpret_cast<char*>(&initialValues.np), sizeof(int));
-    initialValues.ppm = static_cast<float>(initialValues.ppm); ///Esto no debería ser double en vez de float??????
-    initialValues.m = p*pow(initialValues.ppm,3);
-    initialValues.h = r/initialValues.ppm;
+    double d_ppm = static_cast<double>(initialValues.ppm);
+    initialValues.m = p/pow(d_ppm,3);
+    initialValues.h = r/d_ppm;
     std::cout << "ppm: " << initialValues.ppm << ", np: " << initialValues.np << std::endl;
     return initialValues;
 }
@@ -562,7 +562,7 @@ void densities_increase(std::vector<Particle> &particles, Grid &grid, vector<dou
                     pj = particles[particle_j_index];
                     if (particle_i_index != particle_j_index) { /// Check pi != pj
                         if (distance_squared(pi, pj) < (pow(h, 2))) {
-                            densities[particle_i_index] += pow((pow(h, 2) - distance_squared(pi, pj)), 3);
+                            densities[particle_i_index] += pow(pow(h, 2) - distance_squared(pi, pj), 3);
                         }
                     }
                 }
@@ -573,7 +573,7 @@ void densities_increase(std::vector<Particle> &particles, Grid &grid, vector<dou
 
 void densities_transform(vector<double> &densities){
     for (int i = 0; i < densities.size(); i++){
-        densities[i] = (densities[i] + pow(h,6))* (315*m)/(64*M_PI* pow(h,9));
+        densities[i] = (densities[i] + pow(h,6))* 315/(64*M_PI* pow(h,9)) * m;
     }
 }
 
@@ -622,7 +622,8 @@ void accelerations_computation(std::vector<Particle> &particles, Grid &grid,std:
 
     //check_trace("../trz/small/densinc-base-1.trz",grid,particles,densities,accelerations);
     densities_increase(particles,grid,densities);
-    check_trace("../trz/small/densinc-base-1.trz",grid,particles,densities,accelerations);
+    //check_trace("../trz/small/densinc-base-1.trz",grid,particles,densities,accelerations);
+    //load_trace("../trz/small/densinc-base-1.trz",grid,myparticles,densities,accelerations,initialValues);
     densities_transform(densities);
     acceleration_transfer(particles,grid,densities,accelerations);
 
@@ -927,11 +928,14 @@ int main(int argc, char** argv) {
     cout<<"nx  = "<< grid.size.nx<<"    ny  = "<< grid.size.ny<<"     nz  = "<< grid.size.nz <<'\n';
 */
     cout<<"\n\n\n Nuevooooo.... \n\n\n";
-    //std::vector<double> densities;
-    //std::vector<Acceleration> accelerations;
+    std::vector<double> densities;
+    std::vector<Acceleration> accelerations;
     //load_trace("../trz/small/densinc-base-1.trz",grid,myparticles,densities,accelerations,initialValues);
-    simulate(1,myparticles,grid);
+    //simulate(1,myparticles,grid);
     //check_trace("../trz/small/densinc-base-1.trz",grid,myparticles,densities,accelerations);
+    load_trace("../trz/small/densinc-base-1.trz",grid,myparticles,densities,accelerations,initialValues);
+    densities_transform(densities);
+    check_trace("../trz/small/denstransf-base-1.trz",grid,myparticles,densities,accelerations);
 
     write_to_file(argv[3],myparticles,initialValues);
 
