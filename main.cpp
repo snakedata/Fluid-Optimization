@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <cmath>
+#include <math.h>
 #include <vector>
 
 using namespace std;
@@ -20,7 +20,7 @@ struct Particle{
 };
 //Structure for initially read variables ppm,np,m,h
 struct Initial_values{
-    float ppm;
+    double ppm;
     int np;
     double m;
     double h;
@@ -308,12 +308,14 @@ Initial_values read_general_info(ifstream &file){
     // Read ppm and np
     //cap 10-11
     Initial_values initialValues;
-    file.read(reinterpret_cast<char*>(&initialValues.ppm), sizeof(float));
+    float ppm;
+    file.read(reinterpret_cast<char*>(&ppm), sizeof(float));
+    initialValues.ppm = static_cast<double>(ppm);
     file.read(reinterpret_cast<char*>(&initialValues.np), sizeof(int));
-    double d_ppm = static_cast<double>(initialValues.ppm);
-    initialValues.m = p/pow(d_ppm,3);
-    initialValues.h = r/d_ppm;
-    std::cout << "ppm: " << initialValues.ppm << ", np: " << initialValues.np << std::endl;
+    std::cout<<"Diferencia ppm"<<initialValues.ppm-ppm<<" Type of = "<< typeid(initialValues.ppm).name()<<'\n';
+    initialValues.m = p/pow(initialValues.ppm,3);
+    initialValues.h = r/initialValues.ppm;
+    std::cout << "ppm: " << initialValues.ppm << ", np: " << initialValues.np << " float ppm = "<<ppm<<" h = "<<initialValues.h<<'\n';
     return initialValues;
 }
 
