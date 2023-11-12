@@ -47,15 +47,15 @@ struct Acceleration{
 };
 
 //Global Variables //porque está los componentes de una partícula como variables globales??!
-float px;
-float py;
-float pz;
-float hvx;
-float hvy;
-float hvz;
-float vx;
-float vy;
-float vz;
+double px;
+double py;
+double pz;
+double hvx;
+double hvy;
+double hvz;
+double vx;
+double vy;
+double vz;
 //Constants initialization
 double r = 1.695;
 double p = 1000;
