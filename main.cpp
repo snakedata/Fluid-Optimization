@@ -683,7 +683,7 @@ void particle_collision_with_X_axis(std::vector<Particle> &particles, Grid &grid
             increment =dp - (x_param - bmin[0]);                             //  dp − (x − xmin)
             if (increment > pow(10, -10))                              //ax + (sc · ∆x − dv · vx)
                 accelerations[l].ax =accelerations[l].ax + (sc * increment - dv * particles[l].vx);
-        }
+        }       
         for (int l : grid.blocks[j]) {                                       //pared X_max
             x_param = particles[l].px + particles[l].hvx * time_step;        //x = px + hvx · ∆t
             increment =dp - (bmax[0] - x_param);                             //dp − (xmax− x)
