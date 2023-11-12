@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <math.h>
+#include <cmath>
 #include <vector>
 
 using namespace std;
@@ -94,7 +94,12 @@ int particles_statistics(vector<vector <Particle>> &grid){
     cout << "\nThe average number of particles is: " << average << "\nThe maximum is: " << maximum << "\n The minimum is: " << minimum;
 }*/
 
-
+double power(double val, int pwr){
+    for (int i = 0; i<pwr;i++){
+        val*=val;
+    }
+    return val;
+}
 
 ///Functions for trace debug ----- $$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -140,16 +145,16 @@ void compare_particle(Particle &p1, Particle &p2,long id){
 
 void compare_accelerations(Acceleration &a1, Acceleration &a2, long id){
     if (a1.ax!=a2.ax){
-        cout<<"id = "<<id<<" "<<"Accelerations ax differ, a1.ax = "<<a1.ax<<" a2.ax = "<<a2.ax<<'\n';
-        exit(-1);
+        cout<<"id = "<<id<<" "<<"Accelerations ax differ, a1.ax = "<<a1.ax<<" a2.ax = "<<a2.ax<<" Difference = "<<a1.ax-a2.ax<<'\n';
+        //exit(-1);
     }
     if (a1.ay!=a2.ay){
-        cout<<"id = "<<id<<" "<<"Accelerations ay differ, a1.ay = "<<a1.ay<<" a2.ay = "<<a2.ay<<'\n';
-        exit(-1);
+        cout<<"id = "<<id<<" "<<"Accelerations ay differ, a1.ay = "<<a1.ay<<" a2.ay = "<<a2.ay<<" Difference = "<<a1.ay-a2.ay<<'\n';
+        //exit(-1);
     }
     if (a1.az!=a2.az){
-        cout<<"id = "<<id<<" "<<"Accelerations az differ, a1.az = "<<a1.az<<" a2.az = "<<a2.az<<'\n';
-        exit(-1);
+        cout<<"id = "<<id<<" "<<"Accelerations az differ, a1.az = "<<a1.az<<" a2.az = "<<a2.az<<" Difference = "<<a1.az-a2.az<<'\n';
+        //exit(-1);
     }
 }
 
@@ -158,7 +163,7 @@ void find_elem(int e, std::vector<int> &v){
     int found = 0;
     for (int i = 0; i<v.size();i++){
         if(e == v[i]){
-            cout<<"Found\n";
+            //cout<<"Found\n";
             found = 1;
             break;
         }
@@ -202,7 +207,7 @@ void check_trace(string trz, Grid &grid, vector<Particle> &particles, vector<dou
 
         for (int p = 0; p<particles_in_block;p++){
             file.read(reinterpret_cast<char*>(&id), sizeof(long));
-            cout<<"Particle "<<id<<" in block["<<i<<"] : ";
+            //cout<<"Particle "<<id<<" in block["<<i<<"] : ";
             find_elem(id,grid.blocks[i]);
             file.read(reinterpret_cast<char*>(&part.px), sizeof(double));
             file.read(reinterpret_cast<char*>(&part.py), sizeof(double));
@@ -780,6 +785,7 @@ void boundary_collision(std::vector<Particle> &particles, Grid &grid){
 
 
 void particles_motion(std::vector<Particle> &particles, Grid &grid, std::vector <Acceleration> &accelerations){
+
     for (int i = 0; i < particles.size(); i++){
 
         double move_x = particles[i].hvx*time_step + accelerations[i].ax*pow(time_step,2);
@@ -791,23 +797,54 @@ void particles_motion(std::vector<Particle> &particles, Grid &grid, std::vector 
         particles[i].px += move_x;
         particles[i].py += move_y;
         particles[i].pz += move_z;
-        particles[i].vx = particles[i].hvx + (accelerations[i].ax*time_step)/2;
-        particles[i].vy = particles[i].hvy + (accelerations[i].ay*time_step)/2;
-        particles[i].vz = particles[i].hvz + (accelerations[i].az*time_step)/2;
-        particles[i].hvx = particles[i].hvx + accelerations[i].ax*time_step;
-        particles[i].hvy = particles[i].hvy + accelerations[i].ay*time_step;
-        particles[i].hvz = particles[i].hvz + accelerations[i].az*time_step;
+        particles[i].vx = particles[i].hvx + (accelerations[i].ax*time_step)*.5;
+        particles[i].vy = particles[i].hvy + (accelerations[i].ay*time_step)*.5;
+        particles[i].vz = particles[i].hvz + (accelerations[i].az*time_step)*.5;
+        particles[i].hvx += accelerations[i].ax*time_step;
+        particles[i].hvy += accelerations[i].ay*time_step;
+        particles[i].hvz += accelerations[i].az*time_step;
 
         int new_block = find_block(particles[i],grid.size);
-
-        if (old_block!=new_block){
+        //cout<<"\nComparing\n";
+        if (old_block!=new_block) {
+            /*
+            //cout << "\nParticle moved, from " << old_block << " to " << new_block << "\n";
+            cout<<"\nBlock "<<old_block<<"\n";
+            for (auto t = grid.blocks[old_block].begin(); t != grid.blocks[old_block].end(); t++){
+                cout << "\t " << *t << " \t";
+            }
+            cout<<"\nBlock "<<new_block<<"\n";
+            for (auto t = grid.blocks[new_block].begin(); t != grid.blocks[new_block].end(); t++){
+                cout << "\t " << *t << " \t";
+            }
+             */
+            ///Comenta///ESTO ES EL REPOSITION HAY QUE DESCOMENTARLO
+            /*
             grid.blocks[new_block].push_back(i);
-
-            auto x = grid.blocks[old_block].begin();
-            while ( *x != i){x++;}
-
-            grid.blocks[old_block].erase(x);
-
+            //cout<<"\n\n(After push back)Particle "<<i<<" moved from "<<old_block<<" to "<<new_block<<"\n\n";
+            for (auto x = grid.blocks[old_block].begin();x != grid.blocks[new_block].end();x++) {
+                //cout<<"\ncaught iterator\n";
+                if (*x == i){
+                    //cout<<"\nparticle coincide with iterator\n";
+                    grid.blocks[old_block].erase(x);
+                    //cout<<"\nPArticle erased from old block\n";
+                    break;
+                }
+            }*/
+            ///----------------------
+            /*
+            cout<<"\nBlock "<<old_block<<"\n";
+            for (auto t = grid.blocks[old_block].begin(); t != grid.blocks[old_block].end(); t++){
+                cout << "\t " << *t << " \t";
+            }
+            cout<<"\nBlock "<<new_block<<"\n";
+            for (auto t = grid.blocks[new_block].begin(); t != grid.blocks[new_block].end(); t++){
+                cout << "\t " << *t << " \t";
+            }
+            cout<<"\n\n";
+             */
+            //cout<<"\nPushed back, now iterator\n";
+            //cout<<"\nout of loop\n";
         }
 
     }
@@ -909,20 +946,24 @@ int main(int argc, char** argv) {
         }
     }
 
-    cout<<'\n'<<"saved_particles = "<<saved_particles;
+    cout<<'\n'<<"saved_particles = "<<saved_particles;ppm
     cout<<"nx  = "<< grid.size.nx<<"    ny  = "<< grid.size.ny<<"     nz  = "<< grid.size.nz <<'\n';
 */
+
     cout<<"\n\n\n Nuevooooo.... \n\n\n";
     std::vector<double> densities;
     std::vector<Acceleration> accelerations;
+/*
     //load_trace("../trz/small/densinc-base-1.trz",grid,myparticles,densities,accelerations,initialValues);
     //simulate(1,myparticles,grid);
     //check_trace("../trz/small/densinc-base-1.trz",grid,myparticles,densities,accelerations);
     load_trace("../trz/small/densinc-base-1.trz",grid,myparticles,densities,accelerations,initialValues);
     densities_transform(densities);
     check_trace("../trz/small/denstransf-base-1.trz",grid,myparticles,densities,accelerations);
-    
-/*/ TRAZE  PARTICLE COLLITION
+*/
+
+// TRAZE  PARTICLE COLLITION
+/*
     load_trace("../trz/small/acctransf-base-1.trz",grid,myparticles,densities,accelerations,initialValues);
     int num_block = 0;
     Particle mypart101;
@@ -932,9 +973,20 @@ int main(int argc, char** argv) {
     particle_collision(myparticles,grid,accelerations);
     cout<<"nx  = "<< grid.size.nx<<"    ny  = "<< grid.size.ny<<"     nz  = "<< grid.size.nz <<'\n';
     check_trace("../trz/small/partcol-base-1.trz",grid,myparticles,densities,accelerations);
-*/
+
 
     write_to_file(argv[3],myparticles,initialValues);
+*/
+
+    load_trace("../trz/large/partcol-base-1.trz",grid,myparticles,densities,accelerations,initialValues);
+    cout<<"\nNow motion\n";
+    for (auto t = grid.blocks[0].begin();t!=grid.blocks[0].end();t++){
+        cout << "\t " << *t << " \t";
+    }
+    cout<<"\n\n";
+    particles_motion(myparticles, grid, accelerations);
+    cout<<"\nNow check trace\n";
+    check_trace("../trz/large/motion-base-1.trz",grid,myparticles,densities,accelerations);
 
     return 0;
 }
